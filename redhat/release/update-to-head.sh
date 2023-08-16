@@ -27,6 +27,7 @@ REPO_NAME=$(basename $(git rev-parse --show-toplevel))
 # Custom files
 custom_files=$(cat <<EOT | tr '\n' ' '
 redhat
+OWNERS
 EOT
 )
 redhat_files_msg=":open_file_folder: update Red Hat specific files"
