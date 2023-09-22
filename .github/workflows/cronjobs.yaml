@@ -1,0 +1,77 @@
+name: GH Actions Cron Schedule
+on:
+  workflow_dispatch:
+  schedule:
+    # Every M-F at 12:00am run this job
+    - cron:  "0 0 * * 1-5"
+env:
+  CURRENT_REDHAT_IMAGE: registry.access.redhat.com/ubi9/go-toolset@sha256:52ab391730a63945f61d93e8c913db4cc7a96f200de909cd525e2632055d9fa6
+
+jobs:
+  check-upstream-shas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the upstream fulcio repository
+        uses: actions/checkout@v2
+        with:
+          repository: sigstore/fulcio
+          path: upstream-fulcio
+          ref: main
+
+      - name: Get upstream shas
+        run: |
+          cd upstream-fulcio
+          upstreamSHA=$(grep -o -m 1 'golang:[^@]\+@sha256:[a-f0-9]\{64\}' Dockerfile)
+          echo 'UPSTREAM_SHA='$upstreamSHA >> $GITHUB_ENV
+
+      - name: Pull down the midstream fulcio repository
+        uses: actions/checkout@v2
+        with:
+          path: midstream-fulcio
+          ref: main
+
+      - name: Get midstream shas
+        run: |
+          cd midstream-fulcio
+          midstreamSHA=$(grep -o -m 1 'golang:[^@]\+@sha256:[a-f0-9]\{64\}' redhat/patches/0001-dockerfile.patch)
+          echo 'MIDSTREAM_SHA='$midstreamSHA >> $GITHUB_ENV
+
+      - name: Generate new patch file
+        if: ${{ env.UPSTREAM_SHA != env.MIDSTREAM_SHA }}
+        run: |
+          cd upstream-fulcio
+          sed -i 's|${{ env.UPSTREAM_SHA }}|${{ env.CURRENT_REDHAT_IMAGE }}|g' Dockerfile
+          git diff > 0001-dockerfile.patch
+
+          cd ../midstream-fulcio
+          git fetch origin
+          git checkout -B update-dockerfile.patch-file origin/main
+
+          cp -f ../upstream-fulcio/0001-dockerfile.patch redhat/patches/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check for existing pull request
+        if: ${{ env.UPSTREAM_SHA != env.MIDSTREAM_SHA }}
+        run: |
+          cd midstream-fulcio
+          openPRs="$(gh pr list --state open -H update-dockerfile.patch-file --json number | jq -r '.[].number' | wc -l)"
+          echo 'NUM_OPEN_PRS='$openPRs >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git config --global user.name "${GITHUB_ACTOR}"
+
+      - name: Create pull request
+        if: ${{ env.NUM_OPEN_PRS == 0 && env.UPSTREAM_SHA != env.MIDSTREAM_SHA }}
+        run: |
+          cd midstream-fulcio
+          git add .
+          git commit -m "Update image in docker file"
+          git push -f origin update-dockerfile.patch-file
+          gh pr create --base main --head update-dockerfile.patch-file --title "Update patch file" --body "This is an automated pr to update the docker patch file"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
