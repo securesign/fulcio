@@ -1,0 +1,32 @@
+diff --git a/Dockerfile b/Dockerfile
+index 2e3a82f..00d2b3d 100644
+--- a/Dockerfile
++++ b/Dockerfile
+@@ -13,7 +13,7 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+
+-FROM golang:1.20.6@sha256:cfc9d1b07b1ef4f7a4571f0b60a99646a92ef76adb7d9943f4cb7b606c6554e2 AS builder
++FROM registry.access.redhat.com/ubi9/go-toolset@sha256:52ab391730a63945f61d93e8c913db4cc7a96f200de909cd525e2632055d9fa6 AS builder
+ ENV APP_ROOT=/opt/app-root
+ ENV GOPATH=$APP_ROOT
+
+@@ -28,7 +28,7 @@ RUN go build -o server main.go
+ RUN CGO_ENABLED=1 go build -gcflags "all=-N -l" -o server_debug main.go
+
+ # Multi-Stage production build
+-FROM golang:1.20.6@sha256:cfc9d1b07b1ef4f7a4571f0b60a99646a92ef76adb7d9943f4cb7b606c6554e2 as deploy
++FROM registry.access.redhat.com/ubi9/go-toolset@sha256:52ab391730a63945f61d93e8c913db4cc7a96f200de909cd525e2632055d9fa6 as deploy
+
+ # Retrieve the binary from the previous stage
+ COPY --from=builder /opt/app-root/src/server /usr/local/bin/fulcio-server
+@@ -41,3 +41,9 @@ RUN go install github.com/go-delve/delve/cmd/dlv@v1.8.0
+
+ # overwrite server and include debugger
+ COPY --from=builder /opt/app-root/src/server_debug /usr/local/bin/fulcio-server
++
++LABEL description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
++LABEL io.k8s.description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
++LABEL io.k8s.display-name="Fulcio container image for Red Hat Trusted Signer"
++LABEL io.openshift.tags="fulcio trusted-signer"
++LABEL summary="Provides the Fulcio CA for keyless signing with Red Hat Trusted Signer."
