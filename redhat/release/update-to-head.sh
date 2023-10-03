@@ -62,6 +62,12 @@ fi
 git fetch origin $midstream_ref
 git checkout origin/$midstream_ref $custom_files
 
+# RHTAP writes its pipeline files to the root of ${redhat_ref}
+# Fetch those from origin and apply them to the the release branch
+# since we just wiped out our local copy with the upstream ref.
+git fetch origin $redhat_ref
+git checkout origin/$redhat_ref .tekton
+
 # Apply midstream patches
 if [[ -d redhat/patches ]]; then
   git apply redhat/patches/*
@@ -70,9 +76,6 @@ fi
 git add . # Adds applied patches
 git add $custom_files # Adds custom files
 git commit -m "${redhat_files_msg}"
-
-# Push the release-next branch
-git push -f origin "${redhat_ref}"
 
 # Trigger CI
 # TODO: Set up openshift or github CI to run on release-next-ci
