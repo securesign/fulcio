@@ -1,5 +1,5 @@
 diff --git a/Dockerfile b/Dockerfile
-index 2e3a82f..5e63c3c 100644
+index 2e3a82f..00d2b3d 100644
 --- a/Dockerfile
 +++ b/Dockerfile
 @@ -13,7 +13,7 @@
@@ -25,8 +25,8 @@ index 2e3a82f..5e63c3c 100644
  # overwrite server and include debugger
  COPY --from=builder /opt/app-root/src/server_debug /usr/local/bin/fulcio-server
 +
-++LABEL description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
-++LABEL io.k8s.description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
-++LABEL io.k8s.display-name="Fulcio container image for Red Hat Trusted Signer"
-++LABEL io.openshift.tags="fulcio trusted-signer"
-++LABEL summary="Provides the Fulcio CA for keyless signing with Red Hat Trusted Signer."
++LABEL description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
++LABEL io.k8s.description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
++LABEL io.k8s.display-name="Fulcio container image for Red Hat Trusted Signer"
++LABEL io.openshift.tags="fulcio trusted-signer"
++LABEL summary="Provides the Fulcio CA for keyless signing with Red Hat Trusted Signer."
