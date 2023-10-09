@@ -77,15 +77,9 @@ git add . # Adds applied patches
 git add $custom_files # Adds custom files
 git commit -m "${redhat_files_msg}"
 
-# Push the release-next branch
-git push -f origin "${redhat_ref}"
-
 # Trigger CI
 # TODO: Set up openshift or github CI to run on release-next-ci
 git checkout "${redhat_ref}" -B "${redhat_ref}"-ci
-date > ci
-git add ci
-git commit -m "${robot_trigger_msg}"
 git push -f origin "${redhat_ref}-ci"
 
 if hash hub 2>/dev/null; then
