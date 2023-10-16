@@ -67,12 +67,12 @@ git merge origin/$redhat_ref --no-edit
 git fetch origin $midstream_ref
 git checkout origin/$midstream_ref $custom_files
 
-# Apply midstream patches
-if [[ -d redhat/patches ]]; then
-  git apply redhat/patches/*
+if [[ -d redhat/overlays ]]; then
+  # Copy overlays from redhat/overlays to the root of ${redhat_ref}
+  cp -r redhat/overlays/* .
 fi
 
-git add . # Adds applied patches
+git add . # Adds overlays
 git add $custom_files # Adds custom files
 git commit -m "${redhat_files_msg}"
 
