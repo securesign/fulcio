@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM registry.access.redhat.com/ubi9/go-toolset@sha256:52ab391730a63945f61d93e8c913db4cc7a96f200de909cd525e2632055d9fa6 AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset@sha256:46f43b74fa5f32bfb5da3b9782c472adc54ada71eed7d4ef0c50f534b49cc311 AS builder
 ENV APP_ROOT=/opt/app-root
 ENV GOPATH=$APP_ROOT
 
@@ -27,23 +27,24 @@ ADD ./ $APP_ROOT/src/
 RUN go build -o server main.go
 RUN CGO_ENABLED=1 go build -gcflags "all=-N -l" -o server_debug main.go
 
-# Multi-Stage production build
-FROM registry.access.redhat.com/ubi9/go-toolset@sha256:52ab391730a63945f61d93e8c913db4cc7a96f200de909cd525e2632055d9fa6 as deploy
-
-# Retrieve the binary from the previous stage
-COPY --from=builder /opt/app-root/src/server /usr/local/bin/fulcio-server
-# Set the binary as the entrypoint of the container
-ENTRYPOINT ["/usr/local/bin/fulcio-server", "serve"]
-
 # debug compile options & debugger
-FROM registry.access.redhat.com/ubi9/go-toolset@sha256:52ab391730a63945f61d93e8c913db4cc7a96f200de909cd525e2632055d9fa6 as debug
+FROM registry.access.redhat.com/ubi9/go-toolset@sha256:46f43b74fa5f32bfb5da3b9782c472adc54ada71eed7d4ef0c50f534b49cc311 as debug
 RUN go install github.com/go-delve/delve/cmd/dlv@v1.8.0
 
 # overwrite server and include debugger
 COPY --from=builder /opt/app-root/src/server_debug /usr/local/bin/fulcio-server
+
+# Multi-Stage production build
+FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:d37a1ed7bd94ac08acac8ff8d388d1d2b4c9ba17d61f1573a6dab604e6ae4d4f as deploy
 
 LABEL description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
 LABEL io.k8s.description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
 LABEL io.k8s.display-name="Fulcio container image for Red Hat Trusted Signer"
 LABEL io.openshift.tags="fulcio trusted-signer"
 LABEL summary="Provides the Fulcio CA for keyless signing with Red Hat Trusted Signer."
+LABEL com.redhat.component="fulcio"
+
+# Retrieve the binary from the previous stage
+COPY --from=builder /opt/app-root/src/server /usr/local/bin/fulcio-server
+# Set the binary as the entrypoint of the container
+ENTRYPOINT ["/usr/local/bin/fulcio-server", "serve"]
