@@ -1,0 +1,17 @@
+name: GH Actions Cron Schedule
+on:
+  workflow_dispatch:
+  schedule:
+    # Every M-F at 12:00am run this job
+    - cron:  "0 0 * * 1-5"
+    
+jobs:
+  check-image-version:
+    uses: securesign/actions/.github/workflows/check-image-version.yaml@main
+    strategy:
+      matrix:
+        branch: [main, midstream-v1.4.0]
+    with:
+      branch: ${{ matrix.branch }}
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
