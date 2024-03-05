@@ -26,9 +26,9 @@ import (
 	"testing"
 
 	ct "github.com/google/certificate-transparency-go"
-	"github.com/sigstore/fulcio/pkg/ca"
-	"github.com/sigstore/fulcio/pkg/certificate"
-	"github.com/sigstore/fulcio/pkg/test"
+	"github.com/securesign/fulcio/pkg/ca"
+	"github.com/securesign/fulcio/pkg/certificate"
+	"github.com/securesign/fulcio/pkg/test"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/sigstore/sigstore/pkg/signature"
 )

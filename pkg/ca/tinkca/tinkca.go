@@ -22,8 +22,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/sigstore/fulcio/pkg/ca"
-	"github.com/sigstore/fulcio/pkg/ca/baseca"
+	"github.com/securesign/fulcio/pkg/ca"
+	"github.com/securesign/fulcio/pkg/ca/baseca"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 
 	"github.com/google/tink/go/core/registry"

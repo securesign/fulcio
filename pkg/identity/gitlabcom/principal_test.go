@@ -27,7 +27,7 @@ import (
 	"unsafe"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/identity"
 )
 
 func TestJobPrincipalFromIDToken(t *testing.T) {

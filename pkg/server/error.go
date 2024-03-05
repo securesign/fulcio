@@ -18,7 +18,7 @@ package server
 import (
 	"context"
 
-	"github.com/sigstore/fulcio/pkg/log"
+	"github.com/securesign/fulcio/pkg/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

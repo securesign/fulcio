@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/security/privateca/apiv1/privatecapb"
-	"github.com/sigstore/fulcio/pkg/challenges"
+	"github.com/securesign/fulcio/pkg/challenges"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"google.golang.org/protobuf/proto"
 )

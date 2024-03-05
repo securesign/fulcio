@@ -26,7 +26,7 @@ import (
 	"github.com/google/tink/go/aead"
 	"github.com/google/tink/go/keyset"
 	"github.com/google/tink/go/signature"
-	"github.com/sigstore/fulcio/pkg/test"
+	"github.com/securesign/fulcio/pkg/test"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	_ "github.com/sigstore/sigstore/pkg/signature/kms/fake"
 )

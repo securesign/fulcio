@@ -26,7 +26,7 @@ import (
 	"log"
 	"net/url"
 
-	fulciopb "github.com/sigstore/fulcio/pkg/generated/protobuf"
+	fulciopb "github.com/securesign/fulcio/pkg/generated/protobuf"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/sigstore/sigstore/pkg/oauthflow"
 	"github.com/sigstore/sigstore/pkg/signature"

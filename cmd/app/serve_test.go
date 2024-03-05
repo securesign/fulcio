@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/sigstore/fulcio/pkg/api"
-	"github.com/sigstore/fulcio/pkg/ca/ephemeralca"
-	"github.com/sigstore/fulcio/pkg/config"
-	"github.com/sigstore/fulcio/pkg/generated/protobuf"
+	"github.com/securesign/fulcio/pkg/api"
+	"github.com/securesign/fulcio/pkg/ca/ephemeralca"
+	"github.com/securesign/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/generated/protobuf"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

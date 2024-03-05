@@ -24,7 +24,7 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/sigstore/fulcio/pkg/generated/protobuf"
+	"github.com/securesign/fulcio/pkg/generated/protobuf"
 )
 
 var validCfg = `

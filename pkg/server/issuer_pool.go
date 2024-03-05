@@ -15,16 +15,16 @@
 package server
 
 import (
-	"github.com/sigstore/fulcio/pkg/config"
-	"github.com/sigstore/fulcio/pkg/identity"
-	"github.com/sigstore/fulcio/pkg/identity/buildkite"
-	"github.com/sigstore/fulcio/pkg/identity/email"
-	"github.com/sigstore/fulcio/pkg/identity/github"
-	"github.com/sigstore/fulcio/pkg/identity/gitlabcom"
-	"github.com/sigstore/fulcio/pkg/identity/kubernetes"
-	"github.com/sigstore/fulcio/pkg/identity/spiffe"
-	"github.com/sigstore/fulcio/pkg/identity/uri"
-	"github.com/sigstore/fulcio/pkg/identity/username"
+	"github.com/securesign/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/identity/buildkite"
+	"github.com/securesign/fulcio/pkg/identity/email"
+	"github.com/securesign/fulcio/pkg/identity/github"
+	"github.com/securesign/fulcio/pkg/identity/gitlabcom"
+	"github.com/securesign/fulcio/pkg/identity/kubernetes"
+	"github.com/securesign/fulcio/pkg/identity/spiffe"
+	"github.com/securesign/fulcio/pkg/identity/uri"
+	"github.com/securesign/fulcio/pkg/identity/username"
 )
 
 func NewIssuerPool(cfg *config.FulcioConfig) identity.IssuerPool {

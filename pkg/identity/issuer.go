@@ -17,7 +17,7 @@ package identity
 import (
 	"context"
 
-	"github.com/sigstore/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/config"
 )
 
 type Issuer interface {

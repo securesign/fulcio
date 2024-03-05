@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/sigstore/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/config"
 )
 
 // We do this to bypass needing actual OIDC tokens for unit testing.

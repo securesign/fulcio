@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/tink/go/keyset"
 	"github.com/google/tink/go/signature"
-	"github.com/sigstore/fulcio/pkg/ca/tinkca"
+	"github.com/securesign/fulcio/pkg/ca/tinkca"
 )
 
 /*

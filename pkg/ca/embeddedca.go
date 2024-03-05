@@ -20,7 +20,7 @@ import (
 	"crypto"
 
 	ct "github.com/google/certificate-transparency-go"
-	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/identity"
 )
 
 // EmbeddedSCTCA implements precertificate and certificate issuance. Certificates will contain an embedded SCT.

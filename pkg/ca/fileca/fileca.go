@@ -20,8 +20,8 @@ import (
 	"crypto/x509"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/sigstore/fulcio/pkg/ca"
-	"github.com/sigstore/fulcio/pkg/ca/baseca"
+	"github.com/securesign/fulcio/pkg/ca"
+	"github.com/securesign/fulcio/pkg/ca/baseca"
 )
 
 type fileCA struct {

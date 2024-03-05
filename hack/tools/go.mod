@@ -1,4 +1,4 @@
-module github.com/sigstore/fulcio/hack/tools
+module github.com/securesign/fulcio/hack/tools
 
 go 1.20
 

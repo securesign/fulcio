@@ -26,8 +26,8 @@ import (
 	"path/filepath"
 
 	"github.com/ThalesIgnite/crypto11"
-	"github.com/sigstore/fulcio/pkg/ca"
-	"github.com/sigstore/fulcio/pkg/ca/baseca"
+	"github.com/securesign/fulcio/pkg/ca"
+	"github.com/securesign/fulcio/pkg/ca/baseca"
 )
 
 type Params struct {

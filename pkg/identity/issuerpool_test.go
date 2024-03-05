@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/sigstore/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/config"
 )
 
 type testPrincipal struct {

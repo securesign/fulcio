@@ -21,8 +21,8 @@ import (
 	"errors"
 	"strings"
 
-	fulciogrpc "github.com/sigstore/fulcio/pkg/generated/protobuf"
-	"github.com/sigstore/fulcio/pkg/generated/protobuf/legacy"
+	fulciogrpc "github.com/securesign/fulcio/pkg/generated/protobuf"
+	"github.com/securesign/fulcio/pkg/generated/protobuf/legacy"
 	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

@@ -20,7 +20,7 @@ import (
 	"crypto"
 	"crypto/x509"
 
-	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/identity"
 )
 
 // CertificateAuthority implements certificate creation with a detached SCT and
