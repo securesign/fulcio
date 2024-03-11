@@ -1,6 +1,7 @@
 chainguard.dev/go-grpc-kit v0.17.5 h1:y0MHgqm3v0LKKQfxPJV57wkXxa8uMSpNTjhtHbNh1DY=
 chainguard.dev/go-grpc-kit v0.17.5/go.mod h1:vQGcwZiX6jXwhyLPCZwVMvjITD+XcrSmQzuCTW/XcVc=
 cloud.google.com/go v0.26.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
+<<<<<<< HEAD
 cloud.google.com/go v0.113.0 h1:g3C70mn3lWfckKBiCVsAshabrDg01pQ0pnX1MNtnMkA=
 cloud.google.com/go v0.113.0/go.mod h1:glEqlogERKYeePz6ZdkcLJ28Q2I6aERgDDErBg9GzO8=
 cloud.google.com/go/auth v0.4.1 h1:Z7YNIhlWRtrnKlZke7z3GMqzvuYzdc2z98F9D1NV5Hg=
@@ -17,6 +18,22 @@ cloud.google.com/go/longrunning v0.5.7 h1:WLbHekDbjK1fVFD3ibpFFVoyizlLRl73I7YKuA
 cloud.google.com/go/longrunning v0.5.7/go.mod h1:8GClkudohy1Fxm3owmBGid8W0pSgodEMwEAztp38Xng=
 cloud.google.com/go/security v1.17.0 h1:u4RCnEQPvlrrnFRFinU0T3WsjtrsQErkWBfqTM5oUQI=
 cloud.google.com/go/security v1.17.0/go.mod h1:eSuFs0SlBv1gWg7gHIoF0hYOvcSwJCek/GFXtgO6aA0=
+=======
+cloud.google.com/go v0.112.0 h1:tpFCD7hpHFlQ8yPwT3x+QeXqc2T6+n6T+hmABHfDUSM=
+cloud.google.com/go v0.112.0/go.mod h1:3jEEVwZ/MHU4djK5t5RHuKOA/GbLddgTdVubX1qnPD4=
+cloud.google.com/go/compute v1.23.4 h1:EBT9Nw4q3zyE7G45Wvv3MzolIrCJEuHys5muLY0wvAw=
+cloud.google.com/go/compute v1.23.4/go.mod h1:/EJMj55asU6kAFnuZET8zqgwgJ9FvXWXOkkfQZa4ioI=
+cloud.google.com/go/compute/metadata v0.2.3 h1:mg4jlk7mCAj6xXp9UJ4fjI9VUI5rubuGBW5aJ7UnBMY=
+cloud.google.com/go/compute/metadata v0.2.3/go.mod h1:VAV5nSsACxMJvgaAuX6Pk2AawlZn8kiOGuCv6gTkwuA=
+cloud.google.com/go/iam v1.1.6 h1:bEa06k05IO4f4uJonbB5iAgKTPpABy1ayxaIZV/GHVc=
+cloud.google.com/go/iam v1.1.6/go.mod h1:O0zxdPeGBoFdWW3HWmBxJsk0pfvNM/p/qa82rWOGTwI=
+cloud.google.com/go/kms v1.15.7 h1:7caV9K3yIxvlQPAcaFffhlT7d1qpxjB1wHBtjWa13SM=
+cloud.google.com/go/kms v1.15.7/go.mod h1:ub54lbsa6tDkUwnu4W7Yt1aAIFLnspgh0kPGToDukeI=
+cloud.google.com/go/longrunning v0.5.5 h1:GOE6pZFdSrTb4KAiKnXsJBtlE6mEyaW44oKyMILWnOg=
+cloud.google.com/go/longrunning v0.5.5/go.mod h1:WV2LAxD8/rg5Z1cNW6FJ/ZpX4E4VnDnoTk0yawPBB7s=
+cloud.google.com/go/security v1.15.5 h1:wTKJQ10j8EYgvE8Y+KhovxDRVDk2iv/OsxZ6GrLP3kE=
+cloud.google.com/go/security v1.15.5/go.mod h1:KS6X2eG3ynWjqcIX976fuToN5juVkF6Ra6c7MPnldtc=
+>>>>>>> 4f76df5 (Bump github.com/sigstore/sigstore/pkg/signature/kms/gcp)
 filippo.io/edwards25519 v1.1.0 h1:FNf4tywRC1HmFuKW5xopWpigGjJKiJSV0Cqo0cJWDaA=
 filippo.io/edwards25519 v1.1.0/go.mod h1:BxyFTGdWcka3PhytdK4V28tE5sGfRvvvRV7EaN4VDT4=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1 h1:E+OJmp2tPvt1W+amx48v1eqbjDYsgN+RzP4q16yV5eM=
@@ -295,6 +312,7 @@ github.com/secure-systems-lab/go-securesystemslib v0.8.0 h1:mr5An6X45Kb2nddcFlbm
 github.com/secure-systems-lab/go-securesystemslib v0.8.0/go.mod h1:UH2VZVuJfCYR8WgMlCU1uFsOUU+KeyrTWcSS73NBOzU=
 github.com/segmentio/ksuid v1.0.4 h1:sBo2BdShXjmcugAMwjugoGUdUV0pcxY5mW4xKRn3v4c=
 github.com/segmentio/ksuid v1.0.4/go.mod h1:/XUiZBD3kVx5SmUOl55voK5yeAbBNNIed+2O73XgrPE=
+<<<<<<< HEAD
 github.com/sigstore/sigstore v1.8.4 h1:g4ICNpiENFnWxjmBzBDWUn62rNFeny/P77HUC8da32w=
 github.com/sigstore/sigstore v1.8.4/go.mod h1:1jIKtkTFEeISen7en+ZPWdDHazqhxco/+v9CNjc7oNg=
 github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.4 h1:okxaVlaTrQowE1FA4UQ3rw54f7BUjdnzERIxbZTBZuc=
@@ -305,6 +323,18 @@ github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.4 h1:fjnDR5Lw9ElfOSRUGKk
 github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.4/go.mod h1:9KFn5MwelyNoFXu3gNyVzvN/yAhcL6FE053oxih9+vM=
 github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.4 h1:QEXOb+feQmNOyLVT+FrghBqKKK4QDMP5dyic8RZHXdE=
 github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.4/go.mod h1:ohOhV9zclcIpNAWS0kq2ASB3EPPuRce2HjgXXaU3pKQ=
+=======
+github.com/sigstore/sigstore v1.8.2 h1:0Ttjcn3V0fVQXlYq7+oHaaHkGFIt3ywm7SF4JTU/l8c=
+github.com/sigstore/sigstore v1.8.2/go.mod h1:CHVcSyknCcjI4K2ZhS1SI28r0tcQyBlwtALG536x1DY=
+github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.2 h1:e0EtUcE7cqWBxxME7h6upA3EA0IR3EOE3F1t+WHOdTc=
+github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.2/go.mod h1:07qBxPjI9bsgdQRiBz27Ai+gl6hgr//vwXMZzTX87Us=
+github.com/sigstore/sigstore/pkg/signature/kms/azure v1.8.2 h1:Fgt4dC9OozkLEtMO6JYfFgqNdSDG1y1uAdiJgrtZYN4=
+github.com/sigstore/sigstore/pkg/signature/kms/azure v1.8.2/go.mod h1:BT+jh/GK55djPRHqTYu937eq29Zzusf1t0qVbrcn4Aw=
+github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.2 h1:aX6hLH5v3JdOQJJ6+uCMmeDjcwyfQMLmXKJVl6HtzAg=
+github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.2/go.mod h1:OEFPub6XKsX6Fl/PpeIpQTsukG3I0CFWb9saHINV72U=
+github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.2 h1:hRC8sGPQtnTcoOqWbCNAvLpW1pHL4CQl7FT55IrEof8=
+github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.2/go.mod h1:frWJBbYRRHnbLE9h1fH349Mde84NZh6hDrnKqhPgMNU=
+>>>>>>> 4f76df5 (Bump github.com/sigstore/sigstore/pkg/signature/kms/gcp)
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966 h1:JIAuq3EEf9cgbU6AtGPK4CTG3Zf6CKMNqf0MHTggAUA=
 github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966/go.mod h1:sUM3LWHvSMaG192sy56D9F7CNvL7jUJVXoqM1QKLnog=
