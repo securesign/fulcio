@@ -19,7 +19,7 @@
 package app
 
 import (
-	"github.com/sigstore/fulcio/pkg/log"
+	"github.com/securesign/fulcio/pkg/log"
 	"github.com/spf13/cobra"
 )
 

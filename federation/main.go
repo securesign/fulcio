@@ -20,7 +20,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sigstore/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/config"
 	"gopkg.in/yaml.v3"
 )
 

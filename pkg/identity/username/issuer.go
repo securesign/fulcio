@@ -17,9 +17,9 @@ package username
 import (
 	"context"
 
-	"github.com/sigstore/fulcio/pkg/config"
-	"github.com/sigstore/fulcio/pkg/identity"
-	"github.com/sigstore/fulcio/pkg/identity/base"
+	"github.com/securesign/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/identity/base"
 )
 
 type usernameIssuer struct {

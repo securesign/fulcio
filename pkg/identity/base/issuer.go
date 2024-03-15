@@ -21,8 +21,8 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/sigstore/fulcio/pkg/config"
-	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/identity"
 )
 
 var (

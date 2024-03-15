@@ -18,7 +18,7 @@ package main
 import (
 	"context"
 
-	"github.com/sigstore/fulcio/cmd/app"
+	"github.com/securesign/fulcio/cmd/app"
 )
 
 func main() {

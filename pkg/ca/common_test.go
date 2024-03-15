@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sigstore/fulcio/pkg/test"
+	"github.com/securesign/fulcio/pkg/test"
 	"github.com/sigstore/sigstore/pkg/signature"
 )
 

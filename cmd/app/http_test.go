@@ -30,8 +30,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/sigstore/fulcio/pkg/ca"
-	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/ca"
+	"github.com/securesign/fulcio/pkg/identity"
 	"github.com/spf13/viper"
 
 	"google.golang.org/grpc"

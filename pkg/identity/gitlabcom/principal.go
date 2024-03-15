@@ -22,8 +22,8 @@ import (
 	"net/url"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/sigstore/fulcio/pkg/certificate"
-	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/certificate"
+	"github.com/securesign/fulcio/pkg/identity"
 )
 
 type jobPrincipal struct {

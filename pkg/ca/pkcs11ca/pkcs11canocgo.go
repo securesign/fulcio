@@ -21,7 +21,7 @@ package pkcs11ca
 import (
 	"errors"
 
-	"github.com/sigstore/fulcio/pkg/ca/baseca"
+	"github.com/securesign/fulcio/pkg/ca/baseca"
 )
 
 type PKCS11CA struct {

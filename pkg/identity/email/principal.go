@@ -22,10 +22,10 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/sigstore/fulcio/pkg/certificate"
-	"github.com/sigstore/fulcio/pkg/config"
-	"github.com/sigstore/fulcio/pkg/identity"
-	"github.com/sigstore/fulcio/pkg/oauthflow"
+	"github.com/securesign/fulcio/pkg/certificate"
+	"github.com/securesign/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/oauthflow"
 )
 
 type principal struct {

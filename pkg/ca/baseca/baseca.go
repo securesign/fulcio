@@ -26,8 +26,8 @@ import (
 	ct "github.com/google/certificate-transparency-go"
 	cttls "github.com/google/certificate-transparency-go/tls"
 	ctx509 "github.com/google/certificate-transparency-go/x509"
-	"github.com/sigstore/fulcio/pkg/ca"
-	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/ca"
+	"github.com/securesign/fulcio/pkg/identity"
 )
 
 var (

@@ -30,8 +30,8 @@ import (
 
 	privateca "cloud.google.com/go/security/privateca/apiv1"
 	"cloud.google.com/go/security/privateca/apiv1/privatecapb"
-	"github.com/sigstore/fulcio/pkg/ca"
-	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/securesign/fulcio/pkg/ca"
+	"github.com/securesign/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"

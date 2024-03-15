@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/sigstore/fulcio/pkg/config"
+	"github.com/securesign/fulcio/pkg/config"
 )
 
 type IssuerPool []Issuer

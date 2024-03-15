@@ -1,4 +1,4 @@
-module github.com/sigstore/fulcio
+module github.com/securesign/fulcio
 
 go 1.21
 

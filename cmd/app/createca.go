@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"github.com/ThalesIgnite/crypto11"
-	"github.com/sigstore/fulcio/pkg/log"
+	"github.com/securesign/fulcio/pkg/log"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

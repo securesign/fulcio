@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/sigstore/fulcio/pkg/ca"
+	"github.com/securesign/fulcio/pkg/ca"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	"go.step.sm/crypto/pemutil"
 )

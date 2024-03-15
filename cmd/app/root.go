@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/sigstore/fulcio/pkg/log"
+	"github.com/securesign/fulcio/pkg/log"
 )
 
 // rootCmd represents the base command when called without any subcommands

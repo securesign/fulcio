@@ -20,7 +20,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/sigstore/fulcio/pkg/test"
+	"github.com/securesign/fulcio/pkg/test"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 )
 
