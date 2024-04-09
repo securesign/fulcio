@@ -112,7 +112,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("ct-log.tls-ca-cert", "", "Path to TLS CA certificate used to connect to ct-log")
 
 	// convert "http-host" flag to "host" and "http-port" flag to be "port"
-	cmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	cmd.Flags().SetNormalizeFunc(func(_ *pflag.FlagSet, name string) pflag.NormalizedName {
 		switch name {
 		case "http-port":
 			name = "port"
