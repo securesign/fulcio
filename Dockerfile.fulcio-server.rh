@@ -34,6 +34,7 @@ LABEL io.k8s.display-name="Fulcio container image for Red Hat Trusted Signer"
 LABEL io.openshift.tags="fulcio trusted-signer"
 LABEL summary="Provides the Fulcio CA for keyless signing with Red Hat Trusted Signer."
 LABEL com.redhat.component="fulcio"
+LABEL name="fulcio"
 
 # Retrieve the binary from the previous stage
 COPY --from=builder /opt/app-root/src/server /usr/local/bin/fulcio-server
