@@ -408,7 +408,7 @@ func TestGetConfigurationFromYaml(t *testing.T) {
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
