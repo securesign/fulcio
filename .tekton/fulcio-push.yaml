@@ -23,7 +23,7 @@ spec:
   - name: git-url
     value: '{{repo_url}}'
   - name: output-image
-    value: quay.io/redhat-user-workloads/rhtas-tenant/fulcio/fulcio-server:{{revision}}
+    value: quay.io/securesign/fulcio-server:{{revision}}
   - name: path-context
     value: .
   - name: revision
