@@ -39,21 +39,25 @@ import (
 	"testing"
 	"time"
 
+	"chainguard.dev/sdk/uidp"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 	ctclient "github.com/google/certificate-transparency-go/client"
 	"github.com/google/certificate-transparency-go/jsonclient"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
+	"google.golang.org/grpc/test/bufconn"
+
 	"github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/ca/ephemeralca"
 	"github.com/sigstore/fulcio/pkg/config"
 	"github.com/sigstore/fulcio/pkg/generated/protobuf"
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
-	"google.golang.org/grpc/test/bufconn"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
+	"google.golang.org/grpc/resolver"
 )
 
 const (
@@ -62,10 +66,14 @@ const (
 	bufSize                    = 1024 * 1024
 )
 
+func init() {
+	resolver.SetDefaultScheme("passthrough")
+}
+
 var lis *bufconn.Listener
 
 func passFulcioConfigThruContext(cfg *config.FulcioConfig) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// For each request, infuse context with our snapshot of the FulcioConfig.
 		// TODO(mattmoor): Consider periodically (every minute?) refreshing the ConfigMap
 		// from disk, so that we don't need to cycle pods to pick up config updates.
@@ -79,7 +87,7 @@ func passFulcioConfigThruContext(cfg *config.FulcioConfig) grpc.UnaryServerInter
 	}
 }
 
-func setupGRPCForTest(ctx context.Context, t *testing.T, cfg *config.FulcioConfig, ctl *ctclient.LogClient, ca ca.CertificateAuthority) (*grpc.Server, *grpc.ClientConn) {
+func setupGRPCForTest(t *testing.T, cfg *config.FulcioConfig, ctl *ctclient.LogClient, ca ca.CertificateAuthority) (*grpc.Server, *grpc.ClientConn) {
 	t.Helper()
 	lis = bufconn.Listen(bufSize)
 	s := grpc.NewServer(grpc.UnaryInterceptor(passFulcioConfigThruContext(cfg)))
@@ -91,8 +99,14 @@ func setupGRPCForTest(ctx context.Context, t *testing.T, cfg *config.FulcioConfi
 		}
 	}()
 
-	conn, err := grpc.DialContext(ctx, "bufnet",
-		grpc.WithContextDialer(bufDialer), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	// Create a dial option using a custom dialer
+	dialOptions := []grpc.DialOption{
+		grpc.WithContextDialer(bufDialer),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	}
+
+	// Use grpc.NewClient to create the client connection
+	conn, err := grpc.NewClient("passthrough", dialOptions...)
 	if err != nil {
 		t.Fatal("could not create grpc connection", err)
 	}
@@ -107,7 +121,7 @@ func bufDialer(ctx context.Context, _ string) (net.Conn, error) {
 func TestMissingGetTrustBundleFails(t *testing.T) {
 	ctx := context.Background()
 	cfg := &config.FulcioConfig{}
-	server, conn := setupGRPCForTest(ctx, t, cfg, nil, &FailingCertificateAuthority{})
+	server, conn := setupGRPCForTest(t, cfg, nil, &FailingCertificateAuthority{})
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -132,7 +146,7 @@ func TestGetTrustBundleSuccess(t *testing.T) {
 	cfg := &config.FulcioConfig{}
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -184,6 +198,7 @@ func TestGetConfiguration(t *testing.T) {
 	_, gitHubIssuer := newOIDCIssuer(t)
 	_, gitLabIssuer := newOIDCIssuer(t)
 	_, codefreshIssuer := newOIDCIssuer(t)
+	_, chainguardIssuer := newOIDCIssuer(t)
 
 	issuerDomain, err := url.Parse(usernameIssuer)
 	if err != nil {
@@ -234,6 +249,11 @@ func TestGetConfiguration(t *testing.T) {
 				"IssuerURL": %q,
 				"ClientID": "sigstore",
 				"Type": "codefresh-workflow"
+			},
+			%q: {
+				"IssuerURL": %q,
+				"ClientID": "sigstore",
+				"Type": "chainguard-identity"
 			}
 		},
 		"MetaIssuers": {
@@ -250,6 +270,7 @@ func TestGetConfiguration(t *testing.T) {
 		gitHubIssuer, gitHubIssuer,
 		gitLabIssuer, gitLabIssuer,
 		codefreshIssuer, codefreshIssuer,
+		chainguardIssuer, chainguardIssuer,
 		k8sIssuer)))
 	if err != nil {
 		t.Fatalf("config.Read() = %v", err)
@@ -257,7 +278,148 @@ func TestGetConfiguration(t *testing.T) {
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
+	defer func() {
+		server.Stop()
+		conn.Close()
+	}()
+
+	client := protobuf.NewCAClient(conn)
+
+	config, err := client.GetConfiguration(ctx, &protobuf.GetConfigurationRequest{})
+	if err != nil {
+		t.Fatal("GetConfiguration failed", err)
+	}
+
+	if got, want := len(config.Issuers), 10; got != want {
+		t.Fatalf("expected %d issuers, got %d", want, got)
+	}
+
+	expectedIssuers := map[string]bool{
+		emailIssuer: true, spiffeIssuer: true, uriIssuer: true,
+		usernameIssuer: true, k8sIssuer: true, gitHubIssuer: true,
+		buildkiteIssuer: true, gitLabIssuer: true, codefreshIssuer: true,
+		chainguardIssuer: true,
+	}
+	for _, iss := range config.Issuers {
+		var issURL string
+		switch {
+		case expectedIssuers[iss.GetIssuerUrl()]:
+			delete(expectedIssuers, iss.GetIssuerUrl())
+			issURL = iss.GetIssuerUrl()
+		case expectedIssuers[iss.GetWildcardIssuerUrl()]:
+			delete(expectedIssuers, iss.GetWildcardIssuerUrl())
+			issURL = iss.GetWildcardIssuerUrl()
+		default:
+			t.Fatal("issuer missing from expected issuers")
+		}
+
+		if iss.Audience != "sigstore" {
+			t.Fatalf("expected audience to be sigstore, got %v", iss.Audience)
+		}
+
+		if issURL == emailIssuer {
+			if iss.ChallengeClaim != "email" {
+				t.Fatalf("expected email claim for email PoP challenge, got %v", iss.ChallengeClaim)
+			}
+		} else {
+			if iss.ChallengeClaim != "sub" {
+				t.Fatalf("expected sub claim for non-email PoP challenge, got %v", iss.ChallengeClaim)
+			}
+		}
+
+		if issURL == spiffeIssuer {
+			if iss.SpiffeTrustDomain != "example.com" {
+				t.Fatalf("expected SPIFFE trust domain example.com, got %v", iss.SpiffeTrustDomain)
+			}
+		} else {
+			if iss.SpiffeTrustDomain != "" {
+				t.Fatalf("expected no SPIFFE trust domain, got %v", iss.SpiffeTrustDomain)
+			}
+		}
+	}
+
+	if len(expectedIssuers) != 0 {
+		t.Fatal("not all issuers were found in configuration")
+	}
+}
+
+// Tests GetConfigurationFromYaml API
+func TestGetConfigurationFromYaml(t *testing.T) {
+	_, emailIssuer := newOIDCIssuer(t)
+	_, spiffeIssuer := newOIDCIssuer(t)
+	_, uriIssuer := newOIDCIssuer(t)
+	_, usernameIssuer := newOIDCIssuer(t)
+	_, k8sIssuer := newOIDCIssuer(t)
+	_, buildkiteIssuer := newOIDCIssuer(t)
+	_, gitHubIssuer := newOIDCIssuer(t)
+	_, gitLabIssuer := newOIDCIssuer(t)
+	_, codefreshIssuer := newOIDCIssuer(t)
+
+	issuerDomain, err := url.Parse(usernameIssuer)
+	if err != nil {
+		t.Fatal("issuer URL could not be parsed", err)
+	}
+
+	yamlBytes := []byte(fmt.Sprintf(`
+    oidc-issuers:
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: spiffe
+        spiffe-trust-domain: example.com
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: uri
+        subject-domain: %q
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: email
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: username
+        subject-domain: %q
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: buildkite-job
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: github-workflow
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: gitlab-pipeline
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: codefresh-workflow
+    meta-issuers:
+      %v:
+        client-id: sigstore
+        type: kubernetes`,
+		spiffeIssuer, spiffeIssuer,
+		uriIssuer, uriIssuer, uriIssuer,
+		emailIssuer, emailIssuer,
+		usernameIssuer, usernameIssuer, issuerDomain.Hostname(),
+		buildkiteIssuer, buildkiteIssuer,
+		gitHubIssuer, gitHubIssuer,
+		gitLabIssuer, gitLabIssuer,
+		codefreshIssuer, codefreshIssuer,
+		k8sIssuer))
+
+	cfg, err := config.Read(yamlBytes)
+	if err != nil {
+		t.Fatalf("config.Read() = %v", err)
+	}
+
+	ctClient, eca := createCA(cfg, t)
+	ctx := context.Background()
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -370,14 +532,14 @@ func TestAPIWithEmail(t *testing.T) {
 			Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 			Subject:  c.Subject,
 			Audience: jwt.Audience{"sigstore"},
-		}).Claims(customClaims{Email: c.Subject, EmailVerified: true}).CompactSerialize()
+		}).Claims(customClaims{Email: c.Subject, EmailVerified: true}).Serialize()
 		if err != nil {
-			t.Fatalf("CompactSerialize() = %v", err)
+			t.Fatalf("Serialize() = %v", err)
 		}
 
 		ctClient, eca := createCA(cfg, t)
 		ctx := context.Background()
-		server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+		server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 		defer func() {
 			server.Stop()
 			conn.Close()
@@ -459,14 +621,14 @@ func TestAPIWithUsername(t *testing.T) {
 			Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 			Subject:  c.Subject,
 			Audience: jwt.Audience{"sigstore"},
-		}).Claims(customClaims{Email: c.Subject, EmailVerified: true}).CompactSerialize()
+		}).Claims(customClaims{Email: c.Subject, EmailVerified: true}).Serialize()
 		if err != nil {
-			t.Fatalf("CompactSerialize() = %v", err)
+			t.Fatalf("Serialize() = %v", err)
 		}
 
 		ctClient, eca := createCA(cfg, t)
 		ctx := context.Background()
-		server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+		server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 		defer func() {
 			server.Stop()
 			conn.Close()
@@ -557,14 +719,14 @@ func TestAPIWithUriSubject(t *testing.T) {
 			Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 			Subject:  c.Subject,
 			Audience: jwt.Audience{"sigstore"},
-		}).CompactSerialize()
+		}).Serialize()
 		if err != nil {
-			t.Fatalf("CompactSerialize() = %v", err)
+			t.Fatalf("Serialize() = %v", err)
 		}
 
 		ctClient, eca := createCA(cfg, t)
 		ctx := context.Background()
-		server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+		server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 		defer func() {
 			server.Stop()
 			conn.Close()
@@ -650,14 +812,14 @@ func TestAPIWithKubernetes(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  k8sSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -739,14 +901,14 @@ func TestAPIWithBuildkite(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  buildkiteSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -857,14 +1019,14 @@ func TestAPIWithGitHub(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  githubSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1025,14 +1187,14 @@ func TestAPIWithGitLab(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  gitLabSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1168,14 +1330,14 @@ func TestAPIWithCodefresh(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  codefreshSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1247,6 +1409,130 @@ func TestAPIWithCodefresh(t *testing.T) {
 	}
 }
 
+// chainguardClaims holds the additional JWT claims for Chainguard OIDC tokens
+type chainguardClaims struct {
+	Actor    map[string]string `json:"act"`
+	Internal struct {
+		ServicePrincipal string `json:"service-principal,omitempty"`
+	} `json:"internal"`
+}
+
+// Tests API for Chainguard subject types
+func TestAPIWithChainguard(t *testing.T) {
+	chainguardSigner, chainguardIssuer := newOIDCIssuer(t)
+
+	// Create a FulcioConfig that supports these issuers.
+	cfg, err := config.Read([]byte(fmt.Sprintf(`{
+		"OIDCIssuers": {
+			%q: {
+				"IssuerURL": %q,
+				"ClientID": "sigstore",
+				"Type": "chainguard-identity"
+			}
+        }
+	}`, chainguardIssuer, chainguardIssuer)))
+	if err != nil {
+		t.Fatalf("config.Read() = %v", err)
+	}
+
+	group := uidp.NewUIDP("")
+	chainguardSubject := group.NewChild()
+	claims := chainguardClaims{
+		Actor: map[string]string{
+			"iss": chainguardIssuer,
+			"sub": fmt.Sprintf("catalog-syncer:%s", group.String()),
+			"aud": "chainguard",
+		},
+		Internal: struct {
+			ServicePrincipal string `json:"service-principal,omitempty"`
+		}{
+			ServicePrincipal: "CATALOG_SYNCER",
+		},
+	}
+
+	// Create an OIDC token using this issuer's signer.
+	tok, err := jwt.Signed(chainguardSigner).Claims(jwt.Claims{
+		Issuer:   chainguardIssuer,
+		IssuedAt: jwt.NewNumericDate(time.Now()),
+		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
+		Subject:  chainguardSubject.String(),
+		Audience: jwt.Audience{"sigstore"},
+	}).Claims(&claims).Serialize()
+	if err != nil {
+		t.Fatalf("CompactSerialize() = %v", err)
+	}
+
+	ctClient, eca := createCA(cfg, t)
+	ctx := context.Background()
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
+	defer func() {
+		server.Stop()
+		conn.Close()
+	}()
+
+	client := protobuf.NewCAClient(conn)
+
+	pubBytes, proof := generateKeyAndProof(chainguardSubject.String(), t)
+
+	// Hit the API to have it sign our certificate.
+	resp, err := client.CreateSigningCertificate(ctx, &protobuf.CreateSigningCertificateRequest{
+		Credentials: &protobuf.Credentials{
+			Credentials: &protobuf.Credentials_OidcIdentityToken{
+				OidcIdentityToken: tok,
+			},
+		},
+		Key: &protobuf.CreateSigningCertificateRequest_PublicKeyRequest{
+			PublicKeyRequest: &protobuf.PublicKeyRequest{
+				PublicKey: &protobuf.PublicKey{
+					Content: pubBytes,
+				},
+				ProofOfPossession: proof,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SigningCert() = %v", err)
+	}
+
+	leafCert := verifyResponse(resp, eca, chainguardIssuer, t)
+
+	// Expect URI values
+	if len(leafCert.URIs) != 1 {
+		t.Fatalf("unexpected length of leaf certificate URIs, expected 1, got %d", len(leafCert.URIs))
+	}
+	chainguardURL := fmt.Sprintf("%s/%s", chainguardIssuer, chainguardSubject)
+	chainguardURI, err := url.Parse(chainguardURL)
+	if err != nil {
+		t.Fatalf("failed to parse expected url")
+	}
+	if *leafCert.URIs[0] != *chainguardURI {
+		t.Fatalf("URIs do not match: Expected %v, got %v", chainguardURI, leafCert.URIs[0])
+	}
+
+	expectedExts := map[int]string{
+		8: chainguardIssuer,
+
+		// TODO(mattmoor): Embed more of the Chainguard token structure via OIDs.
+	}
+	for o, value := range expectedExts {
+		ext, found := findCustomExtension(leafCert, asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, o})
+		if !found {
+			t.Fatalf("expected extension in custom OID 1.3.6.1.4.1.57264.1.%d", o)
+		}
+		var extValue string
+		rest, err := asn1.Unmarshal(ext.Value, &extValue)
+		if err != nil {
+			t.Fatalf("error unmarshalling extension: :%v", err)
+		}
+		if len(rest) != 0 {
+			t.Fatal("error unmarshalling extension, rest is not 0")
+		}
+		if string(extValue) != value {
+			t.Fatalf("unexpected extension value, expected %s, got %s", value, extValue)
+		}
+	}
+}
+
 // Tests API with issuer claim in different field in the OIDC token
 func TestAPIWithIssuerClaimConfig(t *testing.T) {
 	emailSigner, emailIssuer := newOIDCIssuer(t)
@@ -1276,14 +1562,14 @@ func TestAPIWithIssuerClaimConfig(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true, OtherIssuer: otherIssuerVal}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true, OtherIssuer: otherIssuerVal}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1352,14 +1638,14 @@ func TestAPIWithCSRChallenge(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1434,14 +1720,14 @@ func TestAPIWithInsecurePublicKey(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1509,14 +1795,14 @@ func TestAPIWithoutPublicKey(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1585,14 +1871,14 @@ func TestAPIWithInvalidChallenge(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1653,14 +1939,14 @@ func TestAPIWithInvalidCSR(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1714,14 +2000,14 @@ func TestAPIWithInvalidCSRSignature(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
 	ctx := context.Background()
-	server, conn := setupGRPCForTest(ctx, t, cfg, ctClient, eca)
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
 	defer func() {
 		server.Stop()
 		conn.Close()
@@ -1790,7 +2076,7 @@ func newOIDCIssuer(t *testing.T) (jose.Signer, string) {
 
 	oidcMux := http.NewServeMux()
 
-	oidcMux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+	oidcMux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
 		t.Log("Handling request for openid-configuration.")
 		if err := json.NewEncoder(w).Encode(struct {
 			Issuer  string `json:"issuer"`
@@ -1803,7 +2089,7 @@ func newOIDCIssuer(t *testing.T) (jose.Signer, string) {
 		}
 	})
 
-	oidcMux.HandleFunc("/keys", func(w http.ResponseWriter, r *http.Request) {
+	oidcMux.HandleFunc("/keys", func(w http.ResponseWriter, _ *http.Request) {
 		t.Log("Handling request for jwks.")
 		if err := json.NewEncoder(w).Encode(jose.JSONWebKeySet{
 			Keys: []jose.JSONWebKey{
