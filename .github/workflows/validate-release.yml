@@ -49,6 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
+
       # Error: fatal: detected dubious ownership in repository at '/__w/fulcio/fulcio'
       #      To add an exception for this directory, call:
       #          git config --system --add safe.directory /__w/fulcio/fulcio

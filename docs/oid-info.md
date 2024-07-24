@@ -211,6 +211,7 @@ that Sigstore operates.
 | server_url + repository + "/actions/runs/" + run_id + "/attempts/" + run_attempt | server_url + project_path + /-/jobs/ + job_id                                                     | ??       | ??           | platform_url + /build/ +  workflow_id                                           | Run Invocation URI                      | An immutable identifier that can uniquely identify the build execution                                                                                                                 |
 | repository_visibility                                                            | project_visibility                                                                                | ??       | ??           | N/A                                                                             | Source Repository Visibility At Signing | Source repository visibility at the time of signing the certificate                                                                                                                    |
 
+
 [github-oidc-doc]: https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#understanding-the-oidc-token
 [oid-link]: http://oid-info.com/get/1.3.6.1.4.1.57264
 [gitlab-wip-cliams]: https://gitlab.com/gitlab-org/gitlab/-/issues/404722

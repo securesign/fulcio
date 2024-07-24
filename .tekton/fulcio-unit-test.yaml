@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: go-unit-test
+  annotations:
+    tekton.dev/title: "Go Unit Test Task"
+spec:
+  workspaces:
+    - name: source
+  steps:
+    - name: run-tests
+      image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.21@sha256:98a0ff138c536eee98704d6909699ad5d0725a20573e2c510a60ef462b45cce0
+      workingDir: $(workspaces.source.path)/source
+      script: |
+        #!/usr/bin/env sh
+        go mod vendor
+        go test ./...
+
+# This file bundles the unit tests for fulcio. 
+# If any changes are made to this file, it must be pushed to Quay using the following command:
+# 'tkn bundle push quay.io/securesign/fulcio-unit-test:latest -f .tekton/fulcio-unit-test.yaml'.
