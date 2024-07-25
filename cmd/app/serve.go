@@ -275,7 +275,10 @@ func runServeCmd(cmd *cobra.Command, args []string) { //nolint: revive
 			}
 			opts.PublicKey = string(pemPubKey)
 		}
-		var httpClient *http.Client
+
+		httpClient := &http.Client{
+			Timeout: 30 * time.Second,
+		}
 		if tlsCaCertPath := viper.GetString("tls-ca-cert"); tlsCaCertPath != "" {
 			tlsCaCert, err := os.ReadFile(filepath.Clean(tlsCaCertPath))
 			if err != nil {
@@ -292,14 +295,7 @@ func runServeCmd(cmd *cobra.Command, args []string) { //nolint: revive
 			transport := &http.Transport{
 				TLSClientConfig: tlsConfig,
 			}
-			httpClient = &http.Client{
-				Timeout:   30 * time.Second,
-				Transport: transport,
-			}
-		} else {
-			httpClient = &http.Client{
-				Timeout: 30 * time.Second,
-			}
+			httpClient.Transport = transport
 		}
 		ctClient, err = ctclient.New(logURL, httpClient, opts)
 		if err != nil {
