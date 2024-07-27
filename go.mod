@@ -1,6 +1,8 @@
 module github.com/sigstore/fulcio
 
-go 1.21
+go 1.21.2
+
+toolchain go1.21.12
 
 // toolchain go1.21.3
 
