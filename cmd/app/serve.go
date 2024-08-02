@@ -293,12 +293,12 @@ func runServeCmd(cmd *cobra.Command, args []string) { //nolint: revive
 				TLSClientConfig: tlsConfig,
 			}
 			httpClient = &http.Client{
-				Timeout:   30 * time.Second,
+				Timeout:   60 * time.Second,
 				Transport: transport,
 			}
 		} else {
 			httpClient = &http.Client{
-				Timeout: 30 * time.Second,
+				Timeout: 60 * time.Second,
 			}
 		}
 		ctClient, err = ctclient.New(logURL, httpClient, opts)
