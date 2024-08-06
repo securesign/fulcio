@@ -88,7 +88,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("hsm-caroot-id", "", "HSM ID for Root CA (only used with --ca pkcs11ca)")
 	cmd.Flags().String("ct-log-url", "http://localhost:6962/test", "host and path (with log prefix at the end) to the ct log")
 	cmd.Flags().String("ct-log-public-key-path", "", "Path to a PEM-encoded public key of the CT log, used to verify SCTs")
-	cmd.Flags().String("config-path", "/etc/fulcio-config/config.json", "path to fulcio config json")
+	cmd.Flags().String("config-path", "/etc/fulcio-config/config.yaml", "path to fulcio config yaml")
 	cmd.Flags().String("pkcs11-config-path", "config/crypto11.conf", "path to fulcio pkcs11 config file")
 	cmd.Flags().String("fileca-cert", "", "Path to CA certificate")
 	cmd.Flags().String("fileca-key", "", "Path to CA encrypted private key")
@@ -112,7 +112,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("ct-log.tls-ca-cert", "", "Path to TLS CA certificate used to connect to ct-log")
 
 	// convert "http-host" flag to "host" and "http-port" flag to be "port"
-	cmd.Flags().SetNormalizeFunc(func(f *pflag.FlagSet, name string) pflag.NormalizedName {
+	cmd.Flags().SetNormalizeFunc(func(_ *pflag.FlagSet, name string) pflag.NormalizedName {
 		switch name {
 		case "http-port":
 			name = "port"
