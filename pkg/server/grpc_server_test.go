@@ -58,7 +58,6 @@ import (
 	"github.com/sigstore/fulcio/pkg/generated/protobuf"
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
-	"google.golang.org/grpc/resolver"
 )
 
 const (
