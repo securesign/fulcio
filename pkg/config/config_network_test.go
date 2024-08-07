@@ -25,12 +25,13 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/sigstore/fulcio/pkg/certificate"
 )
 
-func TestLoad(t *testing.T) {
+func TestLoadYamlConfig(t *testing.T) {
 	td := t.TempDir()
-	cfgPath := filepath.Join(td, "config.json")
-	if err := os.WriteFile(cfgPath, []byte(validCfg), 0644); err != nil {
+	cfgPath := filepath.Join(td, "config.yaml")
+	if err := os.WriteFile(cfgPath, []byte(validYamlCfg), 0644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -68,11 +69,107 @@ func TestLoad(t *testing.T) {
 	}
 }
 
+func TestLoadJsonConfig(t *testing.T) {
+	td := t.TempDir()
+	cfgPath := filepath.Join(td, "config.json")
+	if err := os.WriteFile(cfgPath, []byte(validJSONCfg), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(cfgPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ok := cfg.GetIssuer("https://accounts.google.com")
+	if !ok {
+		t.Error("expected true, got false")
+	}
+	if got.ClientID != "foo" {
+		t.Errorf("expected foo, got %s", got.ClientID)
+	}
+	if got.IssuerURL != "https://accounts.google.com" {
+		t.Errorf("expected https://accounts.google.com, got %s", got.IssuerURL)
+	}
+	if got := len(cfg.OIDCIssuers); got != 1 {
+		t.Errorf("expected 1 issuer, got %d", got)
+	}
+
+	got, ok = cfg.GetIssuer("https://oidc.eks.fantasy-land.amazonaws.com/id/CLUSTERIDENTIFIER")
+	if !ok {
+		t.Error("expected true, got false")
+	}
+	if got.ClientID != "bar" {
+		t.Errorf("expected bar, got %s", got.ClientID)
+	}
+	if got.IssuerURL != "https://oidc.eks.fantasy-land.amazonaws.com/id/CLUSTERIDENTIFIER" {
+		t.Errorf("expected https://oidc.eks.fantasy-land.amazonaws.com/id/CLUSTERIDENTIFIER, got %s", got.IssuerURL)
+	}
+
+	if _, ok := cfg.GetIssuer("not_an_issuer"); ok {
+		t.Error("no error returned from an unconfigured issuer")
+	}
+}
+
+func TestParseTemplate(t *testing.T) {
+
+	validTemplate := "{{.foobar}}"
+	invalidTemplate := "{{.foobar}"
+	ciissuerMetadata := make(map[string]IssuerMetadata)
+	ciissuerMetadata["github"] = IssuerMetadata{
+		ExtensionTemplates: certificate.Extensions{
+			BuildTrigger: invalidTemplate,
+		},
+	}
+	fulcioConfig := &FulcioConfig{
+		CIIssuerMetadata: ciissuerMetadata,
+	}
+	// BuildTrigger as a invalid template should raise an error
+	err := validateCIIssuerMetadata(fulcioConfig)
+	if err == nil {
+		t.Error("invalid template should raise an error")
+	}
+	ciissuerMetadata["github"] = IssuerMetadata{
+		ExtensionTemplates: certificate.Extensions{
+			BuildTrigger: validTemplate,
+		},
+	}
+	fulcioConfig = &FulcioConfig{
+		CIIssuerMetadata: ciissuerMetadata,
+	}
+	// BuildTrigger as a valid template shouldn't raise an error
+	err = validateCIIssuerMetadata(fulcioConfig)
+	if err != nil {
+		t.Error("valid template shouldn't raise an error, error: %w", err)
+	}
+	ciissuerMetadata["github"] = IssuerMetadata{
+		SubjectAlternativeNameTemplate: invalidTemplate,
+	}
+	fulcioConfig = &FulcioConfig{
+		CIIssuerMetadata: ciissuerMetadata,
+	}
+	// A SAN as a invalid template should raise an error
+	err = validateCIIssuerMetadata(fulcioConfig)
+	if err == nil {
+		t.Error("invalid SAN should raise an error")
+	}
+	ciissuerMetadata["github"] = IssuerMetadata{
+		SubjectAlternativeNameTemplate: invalidTemplate,
+	}
+	fulcioConfig = &FulcioConfig{
+		CIIssuerMetadata: ciissuerMetadata,
+	}
+	// A SAN as a valid template should raise an error
+	err = validateCIIssuerMetadata(fulcioConfig)
+	if err == nil {
+		t.Error("valid SAN shouldn't raise an error")
+	}
+}
+
 func TestLoadDefaults(t *testing.T) {
 	td := t.TempDir()
 
 	// Don't put anything here!
-	cfgPath := filepath.Join(td, "config.json")
+	cfgPath := filepath.Join(td, "config.yaml")
 	cfg, err := Load(cfgPath)
 	if err != nil {
 		t.Fatal(err)
