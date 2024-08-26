@@ -5,17 +5,42 @@ metadata:
   annotations:
     tekton.dev/title: "Go Unit Test Task"
 spec:
-  workspaces:
-    - name: source
+  params:
+    - description: The trusted artifact URI containing the application source code.
+      name: SOURCE_ARTIFACT
+      type: string
+    - description: The Trusted Artifact URI pointing to the artifact with the prefetched dependencies.
+      name: CACHI2_ARTIFACT
+      type: string
+      default: ""
+  stepTemplate:
+    volumeMounts:
+      - mountPath: /var/workdir
+        name: workdir
+      # This path is hard coded in the cachi2.env file.
+      - mountPath: /cachi2
+        name: cachi2
+    securityContext:
+      # This is needed because the different steps in this Task run with different user IDs.
+      runAsUser: 0
   steps:
+    - image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:4e39fb97f4444c2946944482df47b39c5bbc195c54c6560b0647635f553ab23d
+      name: use-trusted-artifact
+      args:
+        - use
+        - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+        - $(params.CACHI2_ARTIFACT)=/cachi2
     - name: run-tests
-      image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.21@sha256:98a0ff138c536eee98704d6909699ad5d0725a20573e2c510a60ef462b45cce0
-      workingDir: $(workspaces.source.path)/source
+      image: registry.access.redhat.com/ubi9/go-toolset@sha256:1421b69ee4c6d5631174776dc40654051b5183f149213613d74f61a11afaaa94
+      workingDir: /var/workdir/source
       script: |
         #!/usr/bin/env sh
-        go mod vendor
+        if [ -f "/cachi2/cachi2.env" ]; then
+          source "/cachi2/cachi2.env"
+        fi
         go test ./...
-
-# This file bundles the unit tests for fulcio. 
-# If any changes are made to this file, it must be pushed to Quay using the following command:
-# 'tkn bundle push quay.io/securesign/fulcio-unit-test:latest -f .tekton/fulcio-unit-test.yaml'.
+  volumes:
+    - name: workdir
+      emptyDir: {}
+    - name: cachi2
+      emptyDir: {}
