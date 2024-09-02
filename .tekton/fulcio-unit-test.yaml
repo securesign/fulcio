@@ -24,7 +24,7 @@ spec:
       # This is needed because the different steps in this Task run with different user IDs.
       runAsUser: 0
   steps:
-    - image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:4e39fb97f4444c2946944482df47b39c5bbc195c54c6560b0647635f553ab23d
+    - image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:d3f777436f174351e6e93b088682923bb44320d5de57f5e961825db88300cfd3
       name: use-trusted-artifact
       args:
         - use
