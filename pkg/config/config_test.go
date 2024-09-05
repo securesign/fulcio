@@ -27,7 +27,20 @@ import (
 	"github.com/sigstore/fulcio/pkg/generated/protobuf"
 )
 
-var validCfg = `
+var validYamlCfg = `
+oidc-issuers:
+  https://accounts.google.com:
+    issuer-url: https://accounts.google.com
+    client-id: foo
+    type: email
+    challenge-claim: email
+meta-issuers:
+  https://oidc.eks.*.amazonaws.com/id/*:
+    client-id: bar
+    type: kubernetes
+`
+
+var validJSONCfg = `
 {
 	"OIDCIssuers": {
 		"https://accounts.google.com": {
@@ -492,11 +505,17 @@ func Test_issuerToChallengeClaim(t *testing.T) {
 	if claim := issuerToChallengeClaim(IssuerTypeGithubWorkflow, ""); claim != "sub" {
 		t.Fatalf("expected sub subject claim for GitHub issuer, got %s", claim)
 	}
+	if claim := issuerToChallengeClaim(IssuerTypeCIProvider, ""); claim != "sub" {
+		t.Fatalf("expected sub subject claim for CI issuer, got %s", claim)
+	}
 	if claim := issuerToChallengeClaim(IssuerTypeGitLabPipeline, ""); claim != "sub" {
 		t.Fatalf("expected sub subject claim for GitLab issuer, got %s", claim)
 	}
 	if claim := issuerToChallengeClaim(IssuerTypeCodefreshWorkflow, ""); claim != "sub" {
 		t.Fatalf("expected sub subject claim for Codefresh issuer, got %s", claim)
+	}
+	if claim := issuerToChallengeClaim(IssuerTypeChainguard, ""); claim != "sub" {
+		t.Fatalf("expected sub subject claim for Chainguard issuer, got %s", claim)
 	}
 	if claim := issuerToChallengeClaim(IssuerTypeKubernetes, ""); claim != "sub" {
 		t.Fatalf("expected sub subject claim for K8S issuer, got %s", claim)
