@@ -8,7 +8,7 @@ metadata:
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main"
-    # pipelinesascode.tekton.dev/task: "[.tekton/fulcio-unit-test.yaml]"
+    pipelinesascode.tekton.dev/task: "[.tekton/fulcio-unit-test.yaml]"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: fulcio
@@ -337,26 +337,26 @@ spec:
         operator: in
         values:
         - "false"
-    # - name: run-unit-test
-    #   runAfter:
-    #   - prefetch-dependencies
-    #   taskRef:
-    #     name: go-unit-test
-    #   params:
-    #     - name: SOURCE_ARTIFACT
-    #       value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-    #     - name: CACHI2_ARTIFACT
-    #       value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
+    - name: run-unit-test
+      runAfter:
+      - prefetch-dependencies
+      taskRef:
+        name: go-unit-test
+      params:
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
+        - name: CACHI2_ARTIFACT
+          value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
     workspaces:
     - name: git-auth
       optional: true
   taskRunTemplate: {}
   taskRunSpecs:
-  # - pipelineTaskName: run-unit-test
-  #   serviceAccountName: appstudio-pipeline
-  #   podTemplate:
-  #     imagePullSecrets:
-  #     - name: brew-registry-pull-secret
+  - pipelineTaskName: run-unit-test
+    serviceAccountName: appstudio-pipeline
+    podTemplate:
+      imagePullSecrets:
+      - name: brew-registry-pull-secret
   workspaces:
   - name: git-auth
     secret:
