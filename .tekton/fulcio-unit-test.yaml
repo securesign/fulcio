@@ -31,7 +31,7 @@ spec:
         - $(params.SOURCE_ARTIFACT)=/var/workdir/source
         - $(params.CACHI2_ARTIFACT)=/cachi2
     - name: run-tests
-      image: registry.access.redhat.com/ubi9/go-toolset@sha256:34492a70838d50a40f72adb126eeaae41d2cb6e054af829d16121da4dc7048e1
+      image: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.22@sha256:859b38e6f53f49350402ca0a8dc342402f0afd8434c2f8984a7a3e714173cdca
       workingDir: /var/workdir/source
       script: |
         #!/usr/bin/env sh
