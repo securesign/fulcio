@@ -22,13 +22,9 @@ import (
 	"errors"
 	"fmt"
 
-	ctclient "github.com/google/certificate-transparency-go/client"
 	health "google.golang.org/grpc/health/grpc_health_v1"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-
+	ctclient "github.com/google/certificate-transparency-go/client"
 	certauth "github.com/sigstore/fulcio/pkg/ca"
 	"github.com/sigstore/fulcio/pkg/challenges"
 	"github.com/sigstore/fulcio/pkg/config"
@@ -37,6 +33,9 @@ import (
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/fulcio/pkg/log"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type GRPCCAServer interface {
