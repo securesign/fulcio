@@ -29,23 +29,31 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
-      - name: Extract version of Go to use
-        run: echo "GOVERSION=$(cat Dockerfile|grep golang | awk ' { print $2 } ' | cut -d '@' -f 1 | cut -d ':' -f 2 | uniq)" >> $GITHUB_ENV
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      # TODO: uncomment when we bump to go1.22 in go.mod
+      # - name: Extract version of Go to use
+      #   run: echo "GOVERSION=$(cat Dockerfile|grep golang | awk ' { print $2 } ' | cut -d '@' -f 1 | cut -d ':' -f 2 | uniq)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
-          go-version: ${{ env.GOVERSION }}
+          go-version: '1.22'
+          check-latest: true
+
       - uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b # v3.0.0
         name: Install protobuf
         with:
-          version: '25.1'
+          version: '28.0'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
         run: make -C $GITHUB_WORKSPACE all
+
       - name: Test
         run: go test -v -coverprofile=coverage.txt -covermode=atomic ./...
+
       - name: Upload Coverage Report
-        uses: codecov/codecov-action@c16abc29c95fcf9174b58eb7e1abf4c866893bc8 # v4.1.1
+        uses: codecov/codecov-action@e28ff129e5465c2c0dcc6f003fc735cb6ae0c673 # v4.5.0
+
       - name: Ensure no files were modified as a result of the build
         run: git update-index --refresh && git diff-index --quiet -I"^\/\/\s+(-\s+)?protoc(-gen-go)?\s+v[0-9]+\.[0-9]+\.[0-9]+$" HEAD -- || git diff -I"^\/\/\s+(-\s+)?protoc(-gen-go)?\s+v[0-9]+\.[0-9]+\.[0-9]+$" --exit-code

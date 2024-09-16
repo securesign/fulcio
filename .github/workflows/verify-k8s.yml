@@ -25,14 +25,20 @@ jobs:
     name: k8s manifest check
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
-      - name: Extract version of Go to use
-        run: echo "GOVERSION=$(cat Dockerfile|grep golang | awk ' { print $2 } ' | cut -d '@' -f 1 | cut -d ':' -f 2 | uniq)" >> $GITHUB_ENV
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      # TODO: uncomment when we bump to go1.22 in go.mod
+      # - name: Extract version of Go to use
+      #   run: echo "GOVERSION=$(cat Dockerfile|grep golang | awk ' { print $2 } ' | cut -d '@' -f 1 | cut -d ':' -f 2 | uniq)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version: ${{ env.GOVERSION }}
+          check-latest: true
+
       - name: Install kubeval
         run: go install github.com/instrumenta/kubeval@v0.16.1
+
       - run: kubeval config/*.yaml
 
   verify-k8s-deployment:
@@ -46,12 +52,11 @@ jobs:
 
         include:
         - issuer: "OIDC Issuer"
-          issuer-config: |
-            "OIDCIssuers": {"https://kubernetes.default.svc": {"IssuerURL": "https://kubernetes.default.svc","ClientID": "sigstore","Type": "kubernetes"}}
+          issuer-config:
+            "oidc-issuers:\n      https://kubernetes.default.svc:\n        issuer-url: \"https://kubernetes.default.svc\"\n        client-id: \"sigstore\"\n        type: \"kubernetes\""
         - issuer: "Meta Issuer"
-          issuer-config: |
-            "MetaIssuers": {"https://kubernetes.*.svc": {"ClientID": "sigstore","Type": "kubernetes"}}
-
+          issuer-config:
+            "meta-issuers:\n      https://kubernetes.*.svc: \n        client-id: \"sigstore\"\n        type: \"kubernetes\""
     env:
       # https://github.com/google/go-containerregistry/pull/125 allows insecure registry for
       # '*.local' hostnames. This works both for `ko` and our own tag-to-digest resolution logic,
@@ -63,14 +68,18 @@ jobs:
       GIT_VERSION: test
 
     steps:
-      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
-      - name: Extract version of Go to use
-        run: echo "GOVERSION=$(cat Dockerfile|grep golang | awk ' { print $2 } ' | cut -d '@' -f 1 | cut -d ':' -f 2 | uniq)" >> $GITHUB_ENV
-      - uses: actions/setup-go@0c52d547c9bc32b1aa3301fd7a9cb496313a4491 # v5.0.0
-        with:
-          go-version: ${{ env.GOVERSION }}
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-      - uses: ko-build/setup-ko@ace48d793556083a76f1e3e6068850c1f4a369aa # v0.6
+      # TODO: uncomment when we bump to go1.22 in go.mod
+      # - name: Extract version of Go to use
+      #   run: echo "GOVERSION=$(cat Dockerfile|grep golang | awk ' { print $2 } ' | cut -d '@' -f 1 | cut -d ':' -f 2 | uniq)" >> $GITHUB_ENV
+
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version: '1.22'
+          check-latest: true
+
+      - uses: ko-build/setup-ko@3aebd0597dc1e9d1a26bcfdb7cbeb19c131d3037 # v0.7
 
       - name: Setup Cluster
         uses: chainguard-dev/actions/setup-kind@f94883c3bd16936401291899070258f855b5d849 # main
@@ -114,10 +123,8 @@ jobs:
             name: fulcio-config
             namespace: fulcio-system
           data:
-            config.json: |-
-              {
-                ${{ matrix.issuer-config }}
-              }
+            config.yaml: |-
+              ${{ matrix.issuer-config }}
             server.yaml: |-
               host: 0.0.0.0
               port: 5555
@@ -129,7 +136,6 @@ jobs:
               ct-log-url: ""
               log_type: prod
           EOF
-
           # Create secret needed to use fileca
           cat <<EOF > config/fulcio-secret.yaml
           apiVersion: v1

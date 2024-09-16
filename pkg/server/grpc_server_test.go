@@ -39,22 +39,27 @@ import (
 	"testing"
 	"time"
 
+	"chainguard.dev/sdk/uidp"
+	"github.com/go-jose/go-jose/v4"
+	"github.com/go-jose/go-jose/v4/jwt"
 	ctclient "github.com/google/certificate-transparency-go/client"
 	"github.com/google/certificate-transparency-go/jsonclient"
-	"github.com/sigstore/fulcio/pkg/ca"
-	"github.com/sigstore/fulcio/pkg/ca/ephemeralca"
-	"github.com/sigstore/fulcio/pkg/config"
-	"github.com/sigstore/fulcio/pkg/generated/protobuf"
-	"github.com/sigstore/fulcio/pkg/identity"
-	"github.com/sigstore/sigstore/pkg/cryptoutils"
+
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
-	"gopkg.in/square/go-jose.v2"
-	"gopkg.in/square/go-jose.v2/jwt"
+
+	"github.com/sigstore/fulcio/pkg/ca"
+	"github.com/sigstore/fulcio/pkg/ca/ephemeralca"
+	"github.com/sigstore/fulcio/pkg/certificate"
+	"github.com/sigstore/fulcio/pkg/config"
+	"github.com/sigstore/fulcio/pkg/generated/protobuf"
+	"github.com/sigstore/fulcio/pkg/identity"
+	"github.com/sigstore/sigstore/pkg/cryptoutils"
+	"google.golang.org/grpc/resolver"
 )
 
 const (
@@ -70,7 +75,7 @@ func init() {
 var lis *bufconn.Listener
 
 func passFulcioConfigThruContext(cfg *config.FulcioConfig) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	return func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		// For each request, infuse context with our snapshot of the FulcioConfig.
 		// TODO(mattmoor): Consider periodically (every minute?) refreshing the ConfigMap
 		// from disk, so that we don't need to cycle pods to pick up config updates.
@@ -195,6 +200,8 @@ func TestGetConfiguration(t *testing.T) {
 	_, gitHubIssuer := newOIDCIssuer(t)
 	_, gitLabIssuer := newOIDCIssuer(t)
 	_, codefreshIssuer := newOIDCIssuer(t)
+	_, chainguardIssuer := newOIDCIssuer(t)
+	_, ciProviderIssuer := newOIDCIssuer(t)
 
 	issuerDomain, err := url.Parse(usernameIssuer)
 	if err != nil {
@@ -245,6 +252,16 @@ func TestGetConfiguration(t *testing.T) {
 				"IssuerURL": %q,
 				"ClientID": "sigstore",
 				"Type": "codefresh-workflow"
+			},
+			%q: {
+				"IssuerURL": %q,
+				"ClientID": "sigstore",
+				"Type": "chainguard-identity"
+			},
+			%q: {
+				"IssuerURL": %q,
+				"ClientID": "sigstore",
+				"Type": "ci-provider"
 			}
 		},
 		"MetaIssuers": {
@@ -261,7 +278,150 @@ func TestGetConfiguration(t *testing.T) {
 		gitHubIssuer, gitHubIssuer,
 		gitLabIssuer, gitLabIssuer,
 		codefreshIssuer, codefreshIssuer,
+		chainguardIssuer, chainguardIssuer,
+		ciProviderIssuer, ciProviderIssuer,
 		k8sIssuer)))
+	if err != nil {
+		t.Fatalf("config.Read() = %v", err)
+	}
+
+	ctClient, eca := createCA(cfg, t)
+	ctx := context.Background()
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
+	defer func() {
+		server.Stop()
+		conn.Close()
+	}()
+
+	client := protobuf.NewCAClient(conn)
+
+	config, err := client.GetConfiguration(ctx, &protobuf.GetConfigurationRequest{})
+	if err != nil {
+		t.Fatal("GetConfiguration failed", err)
+	}
+
+	if got, want := len(config.Issuers), 11; got != want {
+		t.Fatalf("expected %d issuers, got %d", want, got)
+	}
+
+	expectedIssuers := map[string]bool{
+		emailIssuer: true, spiffeIssuer: true, uriIssuer: true,
+		usernameIssuer: true, k8sIssuer: true, gitHubIssuer: true,
+		buildkiteIssuer: true, gitLabIssuer: true, codefreshIssuer: true,
+		chainguardIssuer: true, ciProviderIssuer: true,
+	}
+	for _, iss := range config.Issuers {
+		var issURL string
+		switch {
+		case expectedIssuers[iss.GetIssuerUrl()]:
+			delete(expectedIssuers, iss.GetIssuerUrl())
+			issURL = iss.GetIssuerUrl()
+		case expectedIssuers[iss.GetWildcardIssuerUrl()]:
+			delete(expectedIssuers, iss.GetWildcardIssuerUrl())
+			issURL = iss.GetWildcardIssuerUrl()
+		default:
+			t.Fatal("issuer missing from expected issuers")
+		}
+
+		if iss.Audience != "sigstore" {
+			t.Fatalf("expected audience to be sigstore, got %v", iss.Audience)
+		}
+
+		if issURL == emailIssuer {
+			if iss.ChallengeClaim != "email" {
+				t.Fatalf("expected email claim for email PoP challenge, got %v", iss.ChallengeClaim)
+			}
+		} else {
+			if iss.ChallengeClaim != "sub" {
+				t.Fatalf("expected sub claim for non-email PoP challenge, got %v", iss.ChallengeClaim)
+			}
+		}
+
+		if issURL == spiffeIssuer {
+			if iss.SpiffeTrustDomain != "example.com" {
+				t.Fatalf("expected SPIFFE trust domain example.com, got %v", iss.SpiffeTrustDomain)
+			}
+		} else {
+			if iss.SpiffeTrustDomain != "" {
+				t.Fatalf("expected no SPIFFE trust domain, got %v", iss.SpiffeTrustDomain)
+			}
+		}
+	}
+
+	if len(expectedIssuers) != 0 {
+		t.Fatal("not all issuers were found in configuration")
+	}
+}
+
+// Tests GetConfigurationFromYaml API
+func TestGetConfigurationFromYaml(t *testing.T) {
+	_, emailIssuer := newOIDCIssuer(t)
+	_, spiffeIssuer := newOIDCIssuer(t)
+	_, uriIssuer := newOIDCIssuer(t)
+	_, usernameIssuer := newOIDCIssuer(t)
+	_, k8sIssuer := newOIDCIssuer(t)
+	_, buildkiteIssuer := newOIDCIssuer(t)
+	_, gitHubIssuer := newOIDCIssuer(t)
+	_, gitLabIssuer := newOIDCIssuer(t)
+	_, codefreshIssuer := newOIDCIssuer(t)
+
+	issuerDomain, err := url.Parse(usernameIssuer)
+	if err != nil {
+		t.Fatal("issuer URL could not be parsed", err)
+	}
+
+	yamlBytes := []byte(fmt.Sprintf(`
+    oidc-issuers:
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: spiffe
+        spiffe-trust-domain: example.com
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: uri
+        subject-domain: %q
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: email
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: username
+        subject-domain: %q
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: buildkite-job
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: github-workflow
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: gitlab-pipeline
+      %v:
+        issuer-url: %q
+        client-id: sigstore
+        type: codefresh-workflow
+    meta-issuers:
+      %v:
+        client-id: sigstore
+        type: kubernetes`,
+		spiffeIssuer, spiffeIssuer,
+		uriIssuer, uriIssuer, uriIssuer,
+		emailIssuer, emailIssuer,
+		usernameIssuer, usernameIssuer, issuerDomain.Hostname(),
+		buildkiteIssuer, buildkiteIssuer,
+		gitHubIssuer, gitHubIssuer,
+		gitLabIssuer, gitLabIssuer,
+		codefreshIssuer, codefreshIssuer,
+		k8sIssuer))
+
+	cfg, err := config.Read(yamlBytes)
 	if err != nil {
 		t.Fatalf("config.Read() = %v", err)
 	}
@@ -381,9 +541,9 @@ func TestAPIWithEmail(t *testing.T) {
 			Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 			Subject:  c.Subject,
 			Audience: jwt.Audience{"sigstore"},
-		}).Claims(customClaims{Email: c.Subject, EmailVerified: true}).CompactSerialize()
+		}).Claims(customClaims{Email: c.Subject, EmailVerified: true}).Serialize()
 		if err != nil {
-			t.Fatalf("CompactSerialize() = %v", err)
+			t.Fatalf("Serialize() = %v", err)
 		}
 
 		ctClient, eca := createCA(cfg, t)
@@ -470,9 +630,9 @@ func TestAPIWithUsername(t *testing.T) {
 			Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 			Subject:  c.Subject,
 			Audience: jwt.Audience{"sigstore"},
-		}).Claims(customClaims{Email: c.Subject, EmailVerified: true}).CompactSerialize()
+		}).Claims(customClaims{Email: c.Subject, EmailVerified: true}).Serialize()
 		if err != nil {
-			t.Fatalf("CompactSerialize() = %v", err)
+			t.Fatalf("Serialize() = %v", err)
 		}
 
 		ctClient, eca := createCA(cfg, t)
@@ -568,9 +728,9 @@ func TestAPIWithUriSubject(t *testing.T) {
 			Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 			Subject:  c.Subject,
 			Audience: jwt.Audience{"sigstore"},
-		}).CompactSerialize()
+		}).Serialize()
 		if err != nil {
-			t.Fatalf("CompactSerialize() = %v", err)
+			t.Fatalf("Serialize() = %v", err)
 		}
 
 		ctClient, eca := createCA(cfg, t)
@@ -661,9 +821,9 @@ func TestAPIWithKubernetes(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  k8sSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -750,9 +910,9 @@ func TestAPIWithBuildkite(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  buildkiteSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -868,9 +1028,9 @@ func TestAPIWithGitHub(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  githubSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -907,6 +1067,178 @@ func TestAPIWithGitHub(t *testing.T) {
 
 	leafCert := verifyResponse(resp, eca, githubIssuer, t)
 
+	// Expect URI values
+	if len(leafCert.URIs) != 1 {
+		t.Fatalf("unexpected length of leaf certificate URIs, expected 1, got %d", len(leafCert.URIs))
+	}
+	githubURL := fmt.Sprintf("https://github.com/%s", claims.JobWorkflowRef)
+	githubURI, err := url.Parse(githubURL)
+	if err != nil {
+		t.Fatalf("failed to parse expected url")
+	}
+	if *leafCert.URIs[0] != *githubURI {
+		t.Fatalf("URIs do not match: Expected %v, got %v", githubURI, leafCert.URIs[0])
+	}
+	// Verify custom OID values
+	deprecatedExpectedExts := map[int]string{
+		2: claims.EventName,
+		3: claims.Sha,
+		4: claims.Workflow,
+		5: claims.Repository,
+		6: claims.Ref,
+	}
+	for o, value := range deprecatedExpectedExts {
+		ext, found := findCustomExtension(leafCert, asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, o})
+		if !found {
+			t.Fatalf("expected extension in custom OID 1.3.6.1.4.1.57264.1.%d", o)
+		}
+		if string(ext.Value) != value {
+			t.Fatalf("unexpected extension value, expected %s, got %s", value, ext.Value)
+		}
+	}
+	url := "https://github.com/"
+	expectedExts := map[int]string{
+		9:  url + claims.JobWorkflowRef,
+		10: claims.JobWorkflowSha,
+		11: claims.RunnerEnvironment,
+		12: url + claims.Repository,
+		13: claims.Sha,
+		14: claims.Ref,
+		15: claims.RepositoryID,
+		16: url + claims.RepositoryOwner,
+		17: claims.RepositoryOwnerID,
+		18: url + claims.WorkflowRef,
+		19: claims.WorkflowSha,
+		20: claims.EventName,
+		21: url + claims.Repository + "/actions/runs/" + claims.RunID + "/attempts/" + claims.RunAttempt,
+		22: claims.RepositoryVisibility,
+	}
+	for o, value := range expectedExts {
+		ext, found := findCustomExtension(leafCert, asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, o})
+		if !found {
+			t.Fatalf("expected extension in custom OID 1.3.6.1.4.1.57264.1.%d", o)
+		}
+		var extValue string
+		rest, err := asn1.Unmarshal(ext.Value, &extValue)
+		if err != nil {
+			t.Fatalf("error unmarshalling extension: :%v", err)
+		}
+		if len(rest) != 0 {
+			t.Fatal("error unmarshalling extension, rest is not 0")
+		}
+		if string(extValue) != value {
+			t.Fatalf("unexpected extension value, expected %s, got %s", value, extValue)
+		}
+	}
+}
+
+// Tests API for CiProvider subject types
+func TestAPIWithCiProvider(t *testing.T) {
+	ciProviderSigner, ciProviderIssuer := newOIDCIssuer(t)
+	// Create a FulcioConfig that supports these issuers.
+	cfg, err := config.Read([]byte(fmt.Sprintf(`{
+		"OIDCIssuers": {
+			%q: {
+				"IssuerURL": %q,
+				"ClientID": "sigstore",
+				"Type": "ci-provider",
+				"CIProvider": "github-workflow"
+			}
+        }
+	}`, ciProviderIssuer, ciProviderIssuer)))
+	if err != nil {
+		t.Fatalf("config.Read() = %v", err)
+	}
+	claims := githubClaims{
+		JobWorkflowRef:       "job/workflow/ref",
+		Sha:                  "sha",
+		EventName:            "trigger",
+		Repository:           "sigstore/fulcio",
+		Workflow:             "workflow",
+		Ref:                  "refs/heads/main",
+		JobWorkflowSha:       "example-sha",
+		RunnerEnvironment:    "cloud-hosted",
+		RepositoryID:         "12345",
+		RepositoryOwner:      "username",
+		RepositoryOwnerID:    "345",
+		RepositoryVisibility: "public",
+		WorkflowRef:          "sigstore/other/.github/workflows/foo.yaml@refs/heads/main",
+		WorkflowSha:          "example-sha-other",
+		RunID:                "42",
+		RunAttempt:           "1",
+	}
+	githubSubject := fmt.Sprintf("repo:%s:ref:%s", claims.Repository, claims.Ref)
+	// Create an OIDC token using this issuer's signer.
+	tok, err := jwt.Signed(ciProviderSigner).Claims(jwt.Claims{
+		Issuer:   ciProviderIssuer,
+		IssuedAt: jwt.NewNumericDate(time.Now()),
+		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
+		Subject:  githubSubject,
+		Audience: jwt.Audience{"sigstore"},
+	}).Claims(&claims).Serialize()
+	if err != nil {
+		t.Fatalf("Serialize() = %v", err)
+	}
+
+	ctClient, eca := createCA(cfg, t)
+	ctx := context.Background()
+	cfg.CIIssuerMetadata = make(map[string]config.IssuerMetadata)
+	cfg.CIIssuerMetadata["github-workflow"] = config.IssuerMetadata{
+		ExtensionTemplates: certificate.Extensions{
+			Issuer:                              "issuer",
+			GithubWorkflowTrigger:               "event_name",
+			GithubWorkflowSHA:                   "sha",
+			GithubWorkflowName:                  "workflow",
+			GithubWorkflowRepository:            "repository",
+			GithubWorkflowRef:                   "ref",
+			BuildSignerURI:                      "{{ .url }}/{{ .job_workflow_ref }}",
+			BuildSignerDigest:                   "job_workflow_sha",
+			RunnerEnvironment:                   "runner_environment",
+			SourceRepositoryURI:                 "{{ .url }}/{{ .repository }}",
+			SourceRepositoryDigest:              "sha",
+			SourceRepositoryRef:                 "ref",
+			SourceRepositoryIdentifier:          "repository_id",
+			SourceRepositoryOwnerURI:            "{{ .url }}/{{ .repository_owner }}",
+			SourceRepositoryOwnerIdentifier:     "repository_owner_id",
+			BuildConfigURI:                      "{{ .url }}/{{ .workflow_ref }}",
+			BuildConfigDigest:                   "workflow_sha",
+			BuildTrigger:                        "event_name",
+			RunInvocationURI:                    "{{ .url }}/{{ .repository }}/actions/runs/{{ .run_id }}/attempts/{{ .run_attempt }}",
+			SourceRepositoryVisibilityAtSigning: "repository_visibility",
+		},
+		DefaultTemplateValues: map[string]string{
+			"url": "https://github.com",
+		},
+		SubjectAlternativeNameTemplate: "{{.url}}/{{.job_workflow_ref}}",
+	}
+
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
+	defer func() {
+		server.Stop()
+		conn.Close()
+	}()
+	client := protobuf.NewCAClient(conn)
+	pubBytes, proof := generateKeyAndProof(githubSubject, t)
+	// Hit the API to have it sign our certificate.
+	resp, err := client.CreateSigningCertificate(ctx, &protobuf.CreateSigningCertificateRequest{
+		Credentials: &protobuf.Credentials{
+			Credentials: &protobuf.Credentials_OidcIdentityToken{
+				OidcIdentityToken: tok,
+			},
+		},
+		Key: &protobuf.CreateSigningCertificateRequest_PublicKeyRequest{
+			PublicKeyRequest: &protobuf.PublicKeyRequest{
+				PublicKey: &protobuf.PublicKey{
+					Content: pubBytes,
+				},
+				ProofOfPossession: proof,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SigningCert() = %v", err)
+	}
+	leafCert := verifyResponse(resp, eca, ciProviderIssuer, t)
 	// Expect URI values
 	if len(leafCert.URIs) != 1 {
 		t.Fatalf("unexpected length of leaf certificate URIs, expected 1, got %d", len(leafCert.URIs))
@@ -1036,9 +1368,9 @@ func TestAPIWithGitLab(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  gitLabSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1179,9 +1511,9 @@ func TestAPIWithCodefresh(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  codefreshSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(&claims).CompactSerialize()
+	}).Claims(&claims).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1258,6 +1590,130 @@ func TestAPIWithCodefresh(t *testing.T) {
 	}
 }
 
+// chainguardClaims holds the additional JWT claims for Chainguard OIDC tokens
+type chainguardClaims struct {
+	Actor    map[string]string `json:"act"`
+	Internal struct {
+		ServicePrincipal string `json:"service-principal,omitempty"`
+	} `json:"internal"`
+}
+
+// Tests API for Chainguard subject types
+func TestAPIWithChainguard(t *testing.T) {
+	chainguardSigner, chainguardIssuer := newOIDCIssuer(t)
+
+	// Create a FulcioConfig that supports these issuers.
+	cfg, err := config.Read([]byte(fmt.Sprintf(`{
+		"OIDCIssuers": {
+			%q: {
+				"IssuerURL": %q,
+				"ClientID": "sigstore",
+				"Type": "chainguard-identity"
+			}
+        }
+	}`, chainguardIssuer, chainguardIssuer)))
+	if err != nil {
+		t.Fatalf("config.Read() = %v", err)
+	}
+
+	group := uidp.NewUIDP("")
+	chainguardSubject := group.NewChild()
+	claims := chainguardClaims{
+		Actor: map[string]string{
+			"iss": chainguardIssuer,
+			"sub": fmt.Sprintf("catalog-syncer:%s", group.String()),
+			"aud": "chainguard",
+		},
+		Internal: struct {
+			ServicePrincipal string `json:"service-principal,omitempty"`
+		}{
+			ServicePrincipal: "CATALOG_SYNCER",
+		},
+	}
+
+	// Create an OIDC token using this issuer's signer.
+	tok, err := jwt.Signed(chainguardSigner).Claims(jwt.Claims{
+		Issuer:   chainguardIssuer,
+		IssuedAt: jwt.NewNumericDate(time.Now()),
+		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
+		Subject:  chainguardSubject.String(),
+		Audience: jwt.Audience{"sigstore"},
+	}).Claims(&claims).Serialize()
+	if err != nil {
+		t.Fatalf("CompactSerialize() = %v", err)
+	}
+
+	ctClient, eca := createCA(cfg, t)
+	ctx := context.Background()
+	server, conn := setupGRPCForTest(t, cfg, ctClient, eca)
+	defer func() {
+		server.Stop()
+		conn.Close()
+	}()
+
+	client := protobuf.NewCAClient(conn)
+
+	pubBytes, proof := generateKeyAndProof(chainguardSubject.String(), t)
+
+	// Hit the API to have it sign our certificate.
+	resp, err := client.CreateSigningCertificate(ctx, &protobuf.CreateSigningCertificateRequest{
+		Credentials: &protobuf.Credentials{
+			Credentials: &protobuf.Credentials_OidcIdentityToken{
+				OidcIdentityToken: tok,
+			},
+		},
+		Key: &protobuf.CreateSigningCertificateRequest_PublicKeyRequest{
+			PublicKeyRequest: &protobuf.PublicKeyRequest{
+				PublicKey: &protobuf.PublicKey{
+					Content: pubBytes,
+				},
+				ProofOfPossession: proof,
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SigningCert() = %v", err)
+	}
+
+	leafCert := verifyResponse(resp, eca, chainguardIssuer, t)
+
+	// Expect URI values
+	if len(leafCert.URIs) != 1 {
+		t.Fatalf("unexpected length of leaf certificate URIs, expected 1, got %d", len(leafCert.URIs))
+	}
+	chainguardURL := fmt.Sprintf("%s/%s", chainguardIssuer, chainguardSubject)
+	chainguardURI, err := url.Parse(chainguardURL)
+	if err != nil {
+		t.Fatalf("failed to parse expected url")
+	}
+	if *leafCert.URIs[0] != *chainguardURI {
+		t.Fatalf("URIs do not match: Expected %v, got %v", chainguardURI, leafCert.URIs[0])
+	}
+
+	expectedExts := map[int]string{
+		8: chainguardIssuer,
+
+		// TODO(mattmoor): Embed more of the Chainguard token structure via OIDs.
+	}
+	for o, value := range expectedExts {
+		ext, found := findCustomExtension(leafCert, asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, o})
+		if !found {
+			t.Fatalf("expected extension in custom OID 1.3.6.1.4.1.57264.1.%d", o)
+		}
+		var extValue string
+		rest, err := asn1.Unmarshal(ext.Value, &extValue)
+		if err != nil {
+			t.Fatalf("error unmarshalling extension: :%v", err)
+		}
+		if len(rest) != 0 {
+			t.Fatal("error unmarshalling extension, rest is not 0")
+		}
+		if string(extValue) != value {
+			t.Fatalf("unexpected extension value, expected %s, got %s", value, extValue)
+		}
+	}
+}
+
 // Tests API with issuer claim in different field in the OIDC token
 func TestAPIWithIssuerClaimConfig(t *testing.T) {
 	emailSigner, emailIssuer := newOIDCIssuer(t)
@@ -1287,9 +1743,9 @@ func TestAPIWithIssuerClaimConfig(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true, OtherIssuer: otherIssuerVal}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true, OtherIssuer: otherIssuerVal}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1363,9 +1819,9 @@ func TestAPIWithCSRChallenge(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1445,9 +1901,9 @@ func TestAPIWithInsecurePublicKey(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1520,9 +1976,9 @@ func TestAPIWithoutPublicKey(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1596,9 +2052,9 @@ func TestAPIWithInvalidChallenge(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1664,9 +2120,9 @@ func TestAPIWithInvalidCSR(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1725,9 +2181,9 @@ func TestAPIWithInvalidCSRSignature(t *testing.T) {
 		Expiry:   jwt.NewNumericDate(time.Now().Add(30 * time.Minute)),
 		Subject:  emailSubject,
 		Audience: jwt.Audience{"sigstore"},
-	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).CompactSerialize()
+	}).Claims(customClaims{Email: emailSubject, EmailVerified: true}).Serialize()
 	if err != nil {
-		t.Fatalf("CompactSerialize() = %v", err)
+		t.Fatalf("Serialize() = %v", err)
 	}
 
 	ctClient, eca := createCA(cfg, t)
@@ -1801,7 +2257,7 @@ func newOIDCIssuer(t *testing.T) (jose.Signer, string) {
 
 	oidcMux := http.NewServeMux()
 
-	oidcMux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+	oidcMux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
 		t.Log("Handling request for openid-configuration.")
 		if err := json.NewEncoder(w).Encode(struct {
 			Issuer  string `json:"issuer"`
@@ -1814,7 +2270,7 @@ func newOIDCIssuer(t *testing.T) (jose.Signer, string) {
 		}
 	})
 
-	oidcMux.HandleFunc("/keys", func(w http.ResponseWriter, r *http.Request) {
+	oidcMux.HandleFunc("/keys", func(w http.ResponseWriter, _ *http.Request) {
 		t.Log("Handling request for jwks.")
 		if err := json.NewEncoder(w).Encode(jose.JSONWebKeySet{
 			Keys: []jose.JSONWebKey{
