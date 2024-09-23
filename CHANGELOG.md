@@ -1,3 +1,49 @@
+# v1.6.4
+
+## Features
+
+* use go1.22.6 to build fulcio (#1793)
+
+## Bugs
+
+* Revert "If custom server url exists, use that instead of the default one." (#1791)
+
+## Contributors
+
+* Carlos Tadeu Panato Junior
+* Fredrik Skogman
+
+# v1.6.3
+
+## Features
+
+* If custom server url exists, use that instead of the default one. (#1776)
+
+## Contributors
+
+* Fredrik Skogman
+* Javan Lacerda
+
+# v1.6.2
+
+## Bug Fixes
+
+* fix: adding ci provider for meta-issuers (#1767)
+
+## Contributors
+
+* Javan Lacerda
+
+# v1.6.1
+
+## Bug Fixes
+
+* fix: removing surplus slash, making logs richer (#1762)
+
+## Contributors
+
+* Javan Lacerda
+
 # v1.6.0
 
 v1.6.0 adds support for onboarding CI identity providers via configuration

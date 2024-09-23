@@ -38,3 +38,4 @@ hack/tools/bin
 
 # vscode
 .vscode/
+pkg/generated
