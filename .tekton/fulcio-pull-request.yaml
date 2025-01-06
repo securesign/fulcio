@@ -33,7 +33,15 @@ spec:
   - name: build-source-image
     value: "true"
   - name: go_unit_test
-    value: false # Until we can get a go image >= 1.23.0
+    value: true
+  - name: go_base_image
+    value: brew.registry.redhat.io/rh-osbs/openshift-golang-builder@sha256:356986205e66dcc03ef9a9fef5a7a13d6d59c29efacf1d971f9224c678932cf0
+  taskRunSpecs:
+    - pipelineTaskName: run-unit-test
+      serviceAccountName: appstudio-pipeline
+      podTemplate:
+        imagePullSecrets:
+        - name: brew-registry-pull-secret
   pipelineRef:
     resolver: git
     params:

@@ -1,3 +1,71 @@
+# v1.6.5
+
+## Features
+
+* use go1.23.2 (#1834)
+* fallback to json default cfg path if yaml does not exist (#1810)
+* Include IDP type and subject domain in configuration API response (#1824)
+
+## Documentation
+
+* Update OIDC claim mapping table to reflect the current state (#1801)
+
+
+## Contributors
+
+* Aditya Sirish
+* Bob Callaway
+* Carlos Tadeu Panato Junior
+* Hayden B
+* Nina
+* Richard Fan
+
+# v1.6.4
+
+## Features
+
+* use go1.22.6 to build fulcio (#1793)
+
+## Bugs
+
+* Revert "If custom server url exists, use that instead of the default one." (#1791)
+
+## Contributors
+
+* Carlos Tadeu Panato Junior
+* Fredrik Skogman
+
+# v1.6.3
+
+## Features
+
+* If custom server url exists, use that instead of the default one. (#1776)
+
+## Contributors
+
+* Fredrik Skogman
+* Javan Lacerda
+
+# v1.6.2
+
+## Bug Fixes
+
+* fix: adding ci provider for meta-issuers (#1767)
+
+## Contributors
+
+* Javan Lacerda
+
+# v1.6.1
+
+## Bug Fixes
+
+* fix: removing surplus slash, making logs richer (#1762)
+
+## Contributors
+
+* Javan Lacerda
+
 # v1.6.0
 
 v1.6.0 adds support for onboarding CI identity providers via configuration
