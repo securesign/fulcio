@@ -5,7 +5,7 @@ go 1.23.2
 require (
 	chainguard.dev/go-grpc-kit v0.17.6
 	chainguard.dev/sdk v0.1.26
-	cloud.google.com/go/security v1.18.1
+	cloud.google.com/go/security v1.18.2
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/ThalesIgnite/crypto11 v1.2.5
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
@@ -47,13 +47,13 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.115.1 // indirect
-	cloud.google.com/go/auth v0.9.5 // indirect
-	cloud.google.com/go/auth/oauth2adapt v0.2.4 // indirect
-	cloud.google.com/go/compute/metadata v0.5.2 // indirect
-	cloud.google.com/go/iam v1.2.1 // indirect
-	cloud.google.com/go/kms v1.20.0 // indirect
-	cloud.google.com/go/longrunning v0.6.1 // indirect
+	cloud.google.com/go v0.116.0 // indirect
+	cloud.google.com/go/auth v0.13.0 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.6 // indirect
+	cloud.google.com/go/compute/metadata v0.6.0 // indirect
+	cloud.google.com/go/iam v1.2.2 // indirect
+	cloud.google.com/go/kms v1.20.1 // indirect
+	cloud.google.com/go/longrunning v0.6.2 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.14.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0 // indirect
@@ -88,13 +88,12 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-containerregistry v0.20.2 // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
-	github.com/googleapis/gax-go/v2 v2.13.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.14.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
@@ -132,15 +131,14 @@ require (
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/thales-e-security/pool v0.0.2 // indirect
 	github.com/titanous/rocacheck v0.0.0-20171023193734-afe73141d399 // indirect
-	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.55.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0 // indirect
-	go.opentelemetry.io/otel v1.30.0 // indirect
+	go.opentelemetry.io/otel v1.31.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.29.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.29.0 // indirect
-	go.opentelemetry.io/otel/metric v1.30.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.29.0 // indirect
-	go.opentelemetry.io/otel/trace v1.30.0 // indirect
+	go.opentelemetry.io/otel/metric v1.31.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.31.0 // indirect
+	go.opentelemetry.io/otel/trace v1.31.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	goa.design/goa v2.2.5+incompatible // indirect
