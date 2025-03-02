@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/sigstore/fulcio/pkg/generated/protobuf"
 )
 
