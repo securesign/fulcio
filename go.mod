@@ -7,7 +7,7 @@ require (
 	chainguard.dev/sdk v0.1.26
 	cloud.google.com/go/security v1.18.2
 	github.com/PaesslerAG/jsonpath v0.1.1
-	github.com/ThalesIgnite/crypto11 v1.2.5
+	github.com/ThalesIgnite/crypto11 v1.4.1
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/fsnotify/fsnotify v1.7.0
