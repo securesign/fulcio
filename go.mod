@@ -20,9 +20,9 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/magiconair/properties v1.8.7
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.21.1
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.60.0
+	github.com/prometheus/common v0.62.0
 	github.com/rs/cors v1.11.1
 	github.com/sigstore/sigstore v1.8.9
 	github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.9
@@ -41,7 +41,7 @@ require (
 	google.golang.org/api v0.214.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20241118233622-e639e219e697
 	google.golang.org/grpc v1.69.2
-	google.golang.org/protobuf v1.36.0
+	google.golang.org/protobuf v1.36.1
 	gopkg.in/yaml.v3 v3.0.1
 	sigs.k8s.io/release-utils v0.8.5
 )
@@ -107,7 +107,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jellydator/ttlcache/v3 v3.3.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
