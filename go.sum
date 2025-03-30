@@ -118,8 +118,8 @@ github.com/fsnotify/fsnotify v1.8.0 h1:dAwr6QBTBZIkG8roQaJjGof0pp0EeF+tNV7YBP3F/
 github.com/fsnotify/fsnotify v1.8.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
 github.com/go-jose/go-jose/v3 v3.0.3 h1:fFKWeig/irsp7XD2zBxvnmA/XaRWp5V3CBsZXJF7G7k=
 github.com/go-jose/go-jose/v3 v3.0.3/go.mod h1:5b+7YgP7ZICgJDBdfjZaIt+H/9L9T/YQrVfLAMboGkQ=
-github.com/go-jose/go-jose/v4 v4.0.4 h1:VsjPI33J0SB9vQM6PLmNjoHqMQNGPiZ0rHL7Ni7Q6/E=
-github.com/go-jose/go-jose/v4 v4.0.4/go.mod h1:NKb5HO1EZccyMpiZNbdUw/14tiXNyUJh188dfnMCAfc=
+github.com/go-jose/go-jose/v4 v4.0.5 h1:M6T8+mKZl/+fNNuFHvGIzDz7BTLQPIounk/b9dw3AaE=
+github.com/go-jose/go-jose/v4 v4.0.5/go.mod h1:s3P1lRrkT8igV8D9OjyL4WRyHvjB6a4JSllnOrmmBOA=
 github.com/go-kit/log v0.1.0/go.mod h1:zbhenjAZHb184qTLMA9ZjW7ThYL0H2mk7Q6pNt4vbaY=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
@@ -151,8 +151,8 @@ github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5a
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/go-cmp v0.7.0 h1:wk8382ETsv4JYUZwIsn6YpYiWiBsYLSJiTsyBybVuN8=
 github.com/google/go-cmp v0.7.0/go.mod h1:pXiqmnSA92OHEEa9HXL2W4E7lf9JzCmGVUdgjX3N/iU=
-github.com/google/go-containerregistry v0.20.2 h1:B1wPJ1SN/S7pB+ZAimcciVD+r+yV/l/DSArMxlbwseo=
-github.com/google/go-containerregistry v0.20.2/go.mod h1:z38EKdKh4h7IP2gSfUUqEvalZBqs6AoLeWfUy34nQC8=
+github.com/google/go-containerregistry v0.20.3 h1:oNx7IdTI936V8CQRveCjaxOiegWwvM7kqkbXTpyiovI=
+github.com/google/go-containerregistry v0.20.3/go.mod h1:w00pIgBRDVUDFM6bq+Qx8lwNWK+cxgCuX1vd3PIBDNI=
 github.com/google/s2a-go v0.1.9 h1:LGD7gtMgezd8a/Xak7mEWL0PjoTQFvpRudN895yqKW0=
 github.com/google/s2a-go v0.1.9/go.mod h1:YA0Ei2ZQL3acow2O62kdp9UlnvMmU7kA6Eutn0dXayM=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
@@ -295,8 +295,8 @@ github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.12 h1:EC3UmIaa7nV9sCgSpV
 github.com/sigstore/sigstore/pkg/signature/kms/aws v1.8.12/go.mod h1:aw60vs3crnQdM/DYH+yF2P0MVKtItwAX34nuaMrY7Lk=
 github.com/sigstore/sigstore/pkg/signature/kms/azure v1.8.12 h1:FPpliDTywSy0woLHMAdmTSZ5IS/lVBZ0dY0I+2HmnSY=
 github.com/sigstore/sigstore/pkg/signature/kms/azure v1.8.12/go.mod h1:NkPiz4XA0JcBSXzJUrjMj7Xi7oSTew1Ip3Zmt56mHlw=
-github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.12 h1:kweBChR6M9FEvmxN3BMEcl7SNnwxTwKF7THYFKLOE5U=
-github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.8.12/go.mod h1:6+d+A6oYt1W5OgtzgEVb21V7tAZ/C2Ihtzc5MNJbayY=
+github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.9.1 h1:LFiYK1DEWQ6Hf/nroFzBMM+s5rVSjVL45Alpb5Ctl5A=
+github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.9.1/go.mod h1:GFyFmDsE2wDuIHZD+4+JErGpA0S4zJsKNz5l2JVJd8s=
 github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.12 h1:jvY1B9bjP+tKzdKDyuq5K7O19CG2IKzGJNTy5tuL2Gs=
 github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.8.12/go.mod h1:2uEeOb8xE2RC6OvzxKux1wkS39Zv8gA27z92m49xUTc=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
