@@ -1,8 +1,8 @@
 module github.com/sigstore/fulcio
 
-go 1.23.3
+go 1.24.0
 
-toolchain go1.23.4
+toolchain go1.24.1
 
 require (
 	chainguard.dev/go-grpc-kit v0.17.8
@@ -13,7 +13,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/coreos/go-oidc/v3 v3.12.0
 	github.com/fsnotify/fsnotify v1.8.0
-	github.com/go-jose/go-jose/v4 v4.0.4
+	github.com/go-jose/go-jose/v4 v4.0.5
 	github.com/goadesign/goa v2.2.5+incompatible
 	github.com/google/certificate-transparency-go v1.3.1
 	github.com/google/go-cmp v0.7.0
@@ -110,7 +110,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.1-0.20220621161143-b0104c826a24 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/letsencrypt/boulder v0.0.0-20240620165639-de9c06129bec // indirect
+	github.com/letsencrypt/boulder v0.0.0-20250328235739-037c654d3d83 // indirect
 	github.com/miekg/pkcs11 v1.1.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
