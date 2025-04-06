@@ -1,12 +1,14 @@
 module github.com/sigstore/fulcio/hack/tools
 
-go 1.22.0
+go 1.23.0
+
+toolchain go1.23.8
 
 require (
 	github.com/googleapis/api-linter v1.68.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.25.1
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.5.1
-	google.golang.org/protobuf v1.36.3
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
@@ -28,7 +30,7 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20241219192143-6b3ec007d9bb // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241219192143-6b3ec007d9bb // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250404141209-ee84b53bf3d0 // indirect
 	google.golang.org/grpc v1.69.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
