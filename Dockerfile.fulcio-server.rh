@@ -38,5 +38,9 @@ LABEL name="fulcio"
 
 # Retrieve the binary from the previous stage
 COPY --from=builder /opt/app-root/src/server /usr/local/bin/fulcio-server
+COPY LICENSE /licenses/LICENSE
+
+USER 65532:65532
+
 # Set the binary as the entrypoint of the container
 ENTRYPOINT ["/usr/local/bin/fulcio-server", "serve"]
