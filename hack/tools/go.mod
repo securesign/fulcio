@@ -10,7 +10,7 @@ require (
 )
 
 require (
-	bitbucket.org/creachadair/stringset v0.0.12 // indirect
+	bitbucket.org/creachadair/stringset v0.0.14 // indirect
 	cloud.google.com/go/longrunning v0.6.3 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.7.1 // indirect
 	github.com/bufbuild/protocompile v0.14.1 // indirect
