@@ -5,7 +5,7 @@ go 1.23.3
 toolchain go1.23.4
 
 require (
-	chainguard.dev/go-grpc-kit v0.17.8
+	chainguard.dev/go-grpc-kit v0.17.10
 	chainguard.dev/sdk v0.1.29
 	cloud.google.com/go/security v1.18.4
 	github.com/PaesslerAG/jsonpath v0.1.1
