@@ -1,8 +1,8 @@
 module github.com/sigstore/fulcio
 
-go 1.23.3
+go 1.24
 
-toolchain go1.23.4
+toolchain go1.24.2
 
 require (
 	chainguard.dev/go-grpc-kit v0.17.8
@@ -13,7 +13,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/coreos/go-oidc/v3 v3.12.0
 	github.com/fsnotify/fsnotify v1.8.0
-	github.com/go-jose/go-jose/v4 v4.0.4
+	github.com/go-jose/go-jose/v4 v4.1.0
 	github.com/goadesign/goa v2.2.5+incompatible
 	github.com/google/certificate-transparency-go v1.3.1
 	github.com/google/go-cmp v0.7.0
