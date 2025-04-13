@@ -1,6 +1,8 @@
 module github.com/sigstore/fulcio/hack/tools
 
-go 1.22.0
+go 1.23
+
+toolchain go1.23.8
 
 require (
 	github.com/googleapis/api-linter v1.68.0
@@ -20,7 +22,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/rogpeppe/go-internal v1.10.0 // indirect
+	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
