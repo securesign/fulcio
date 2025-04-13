@@ -12,7 +12,7 @@ require (
 require (
 	bitbucket.org/creachadair/stringset v0.0.14 // indirect
 	cloud.google.com/go/longrunning v0.6.3 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.7.1 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
 	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/gertd/go-pluralize v0.2.1 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
