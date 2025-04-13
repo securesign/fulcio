@@ -57,12 +57,12 @@ require (
 	cloud.google.com/go/kms v1.21.1 // indirect
 	cloud.google.com/go/longrunning v0.6.6 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.8.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.10.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.3.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.1.0 // indirect
-	github.com/AzureAD/microsoft-authentication-library-for-go v1.3.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.18.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.9.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.3.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.1.1 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
 	github.com/PaesslerAG/gval v1.0.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.5 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.32.8 // indirect
@@ -88,7 +88,7 @@ require (
 	github.com/go-jose/go-jose/v3 v3.0.3 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-containerregistry v0.20.2 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
@@ -146,7 +146,7 @@ require (
 	goa.design/goa v2.2.5+incompatible // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
