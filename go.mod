@@ -41,7 +41,7 @@ require (
 	go.step.sm/crypto v0.57.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.227.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20250409194420-de1ac958c67a
+	google.golang.org/genproto/googleapis/api 207652e42e2e
 	google.golang.org/grpc v1.71.0
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/yaml.v3 v3.0.1
