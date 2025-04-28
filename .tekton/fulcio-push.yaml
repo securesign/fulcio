@@ -30,6 +30,10 @@ spec:
     value: '{{revision}}'
   - name: build-source-image
     value: "true"
+  - name: hermetic
+    value: "true"
+  - name: prefetch-input
+    value: [{"path": ".", "type": "gomod"}, {"path": "./hack/tools", "type": "gomod"}]
   - name: go_unit_test
     value: true
   - name: go_base_image
