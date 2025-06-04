@@ -43,13 +43,16 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:5555/healthz"]
       interval: 10s
       timeout: 3s
-      retries: 3
-      start_period: 5s
+      retries: 5
+      start_period: 30s
     depends_on:
-      - dex-idp
+      dex-idp:
+        condition: service_healthy
     read_only: true
   dex-idp:
-    image: dexidp/dex:v2.30.0
+    build:
+      context: .
+      dockerfile: Dockerfile.dex-idp
     user: root
     command: [
       "dex",
@@ -59,8 +62,6 @@ services:
     restart: always # keep the server running
     ports:
       - "8888:8888"
-    volumes:
-      - ./config/dex:/etc/config/:ro
     healthcheck:
       test: ["CMD", "wget", "-O", "/dev/null", "http://localhost:8888/auth/healthz"]
       interval: 10s
@@ -72,12 +73,14 @@ services:
       context: .
       dockerfile: Dockerfile.ctfe_init
     depends_on:
-      - trillian-log-server
-      - fulcio-server
+      trillian-log-server:
+        condition: service_started
+      fulcio-server:
+        condition: service_healthy
     volumes:
       - ctfeConfig:/etc/config/:rw
   ct_server:
-    image: gcr.io/trillian-opensource-ci/ctfe
+    image: ghcr.io/sigstore/scaffolding/ct_server:v0.7.23@sha256:47170e948ac210422de689168a2422c7223f5c45121d910b9168be41deef66d2
     volumes:
       - ctfeConfig:/etc/config/:ro
       - ./config/tls:/config/tls:z
@@ -100,7 +103,8 @@ services:
     ports:
       - "6962:6962"
   mysql:
-    image: gcr.io/trillian-opensource-ci/db_server:3c8193ebb2d7fedb44d18e9c810d0d2e4dbb7e4d
+    platform: linux/amd64
+    image: gcr.io/trillian-opensource-ci/db_server:v1.7.2@sha256:c3d5e243a2995e6bd83479c59cf5f586244f0988f97429f44e3334da0a95a5d0
     environment:
       - MYSQL_ROOT_PASSWORD=zaphod
       - MYSQL_DATABASE=test
@@ -108,15 +112,15 @@ services:
       - MYSQL_PASSWORD=zaphod
     restart: always # keep the MySQL server running
     healthcheck:
-      test: ["CMD", "/etc/init.d/mysql", "status"]
-      interval: 30s
+      test: "mysqladmin -h 127.0.0.1 --user=$$MYSQL_USER --password=$$MYSQL_ROOT_PASSWORD -s ping" 
+      interval: 10s
       timeout: 3s
-      retries: 3
-      start_period: 10s
+      retries: 9
+      start_period: 90s
     volumes:
       - mysql:/var/lib/mysql
   trillian-log-server:
-    image: gcr.io/trillian-opensource-ci/log_server
+    image: ghcr.io/sigstore/scaffolding/trillian_log_server:v1.7.2@sha256:ff64f73b4a8acae7546ecfb5b73c90933b614130a3b43c764a35535e4f60451b
     command: [
       "--storage_system=mysql",
       "--mysql_uri=test:zaphod@tcp(mysql:3306)/test",
@@ -129,9 +133,10 @@ services:
       - "8095:8090"
       - "8096:8091"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
   trillian-log-signer:
-    image: gcr.io/trillian-opensource-ci/log_signer
+    image: ghcr.io/sigstore/scaffolding/trillian_log_signer:v1.7.2@sha256:bfcc659dc08f87a0f4a4797edf88c93426a95f0d004032779a028bdce7b7e821
     command: [
       "--storage_system=mysql",
       "--mysql_uri=test:zaphod@tcp(mysql:3306)/test",
@@ -144,7 +149,8 @@ services:
     ports:
       - "8097:8096"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
 volumes:
   ctfeConfig: {}
   mysql: {}

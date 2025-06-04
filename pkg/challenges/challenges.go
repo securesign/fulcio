@@ -44,11 +44,17 @@ import (
 // CheckSignature verifies a challenge, a signature over the subject or email
 // of an OIDC token
 func CheckSignature(pub crypto.PublicKey, proof []byte, subject string) error {
-	verifier, err := signature.LoadVerifier(pub, crypto.SHA256)
+	verifier, err := signature.LoadDefaultVerifier(pub)
 	if err != nil {
 		return err
 	}
 
+	return CheckSignatureWithVerifier(verifier, proof, subject)
+}
+
+// CheckSignatureWithVerifier verifies a challenge, a signature over the subject
+// or email of an OIDC token
+func CheckSignatureWithVerifier(verifier signature.Verifier, proof []byte, subject string) error {
 	return verifier.VerifySignature(bytes.NewReader(proof), strings.NewReader(subject))
 }
 
@@ -61,15 +67,15 @@ func PrincipalFromIDToken(ctx context.Context, tok *oidc.IDToken) (identity.Prin
 	var err error
 	switch iss.Type {
 	case config.IssuerTypeBuildkiteJob:
-		principal, err = buildkite.JobPrincipalFromIDToken(ctx, tok)
+		principal, err = buildkite.JobPrincipalFromIDToken(ctx, tok) // nolint
 	case config.IssuerTypeGitLabPipeline:
-		principal, err = gitlabcom.JobPrincipalFromIDToken(ctx, tok)
+		principal, err = gitlabcom.JobPrincipalFromIDToken(ctx, tok) // nolint
 	case config.IssuerTypeEmail:
 		principal, err = email.PrincipalFromIDToken(ctx, tok)
 	case config.IssuerTypeSpiffe:
 		principal, err = spiffe.PrincipalFromIDToken(ctx, tok)
 	case config.IssuerTypeGithubWorkflow:
-		principal, err = github.WorkflowPrincipalFromIDToken(ctx, tok)
+		principal, err = github.WorkflowPrincipalFromIDToken(ctx, tok) // nolint
 	case config.IssuerTypeKubernetes:
 		principal, err = kubernetes.PrincipalFromIDToken(ctx, tok)
 	case config.IssuerTypeURI:

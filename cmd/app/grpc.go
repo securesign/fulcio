@@ -26,8 +26,9 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/sigstore/sigstore/pkg/signature"
+
 	"github.com/fsnotify/fsnotify"
-	"github.com/goadesign/goa/grpc/middleware"
 	ctclient "github.com/google/certificate-transparency-go/client"
 	grpcmw "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -42,6 +43,7 @@ import (
 	"github.com/sigstore/fulcio/pkg/log"
 	"github.com/sigstore/fulcio/pkg/server"
 	"github.com/spf13/viper"
+	"goa.design/goa/v3/grpc/middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	health "google.golang.org/grpc/health/grpc_health_v1"
@@ -155,7 +157,7 @@ func (c *cachedTLSCert) GRPCCreds() grpc.ServerOption {
 	}))
 }
 
-func createGRPCServer(cfg *config.FulcioConfig, ctClient *ctclient.LogClient, baseca ca.CertificateAuthority, ip identity.IssuerPool) (*grpcServer, error) {
+func createGRPCServer(cfg *config.FulcioConfig, ctClient *ctclient.LogClient, baseca ca.CertificateAuthority, algorithmRegistry *signature.AlgorithmRegistryConfig, ip identity.IssuerPool) (*grpcServer, error) {
 	logger, opts := log.SetupGRPCLogging()
 
 	serverOpts := []grpc.ServerOption{
@@ -186,7 +188,7 @@ func createGRPCServer(cfg *config.FulcioConfig, ctClient *ctclient.LogClient, ba
 
 	myServer := grpc.NewServer(serverOpts...)
 
-	grpcCAServer := server.NewGRPCCAServer(ctClient, baseca, ip)
+	grpcCAServer := server.NewGRPCCAServer(ctClient, baseca, algorithmRegistry, ip)
 
 	health.RegisterHealthServer(myServer, grpcCAServer)
 	// Register your gRPC service implementations.
@@ -220,7 +222,7 @@ func (g *grpcServer) startTCPListener(wg *sync.WaitGroup) {
 		<-sigint
 
 		// received an interrupt signal, shut down
-		g.Server.GracefulStop()
+		g.GracefulStop()
 		close(idleConnsClosed)
 		log.Logger.Info("stopped grpc server")
 	}()
@@ -230,7 +232,7 @@ func (g *grpcServer) startTCPListener(wg *sync.WaitGroup) {
 		if g.tlsCertWatcher != nil {
 			defer g.tlsCertWatcher.Close()
 		}
-		if err := g.Server.Serve(lis); err != nil {
+		if err := g.Serve(lis); err != nil {
 			log.Logger.Fatalf("error shutting down grpcServer: %w", err)
 		}
 		<-idleConnsClosed
@@ -261,7 +263,7 @@ func (g *grpcServer) startUnixListener() {
 
 		log.Logger.Infof("listening on grpc at %s", unixAddr.String())
 
-		log.Logger.Fatal(g.Server.Serve(lis))
+		log.Logger.Fatal(g.Serve(lis))
 	}()
 }
 

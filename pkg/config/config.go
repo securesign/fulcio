@@ -17,21 +17,22 @@ package config
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"os"
 	"reflect"
 	"regexp"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/sigstore/fulcio/pkg/certificate"
 	fulciogrpc "github.com/sigstore/fulcio/pkg/generated/protobuf"
 	"github.com/sigstore/fulcio/pkg/log"
@@ -71,7 +72,7 @@ type FulcioConfig struct {
 	// verifiers is a fixed mapping from our OIDCIssuers to their OIDC verifiers.
 	verifiers map[string][]*verifierWithConfig
 	// lru is an LRU cache of recently used verifiers for our meta issuers.
-	lru *lru.TwoQueueCache
+	lru *lru.TwoQueueCache[string, []*verifierWithConfig]
 }
 
 type IssuerMetadata struct {
@@ -116,6 +117,11 @@ type OIDCIssuer struct {
 	// Optional, the contact for the issuer team
 	// Usually it is a email
 	Contact string `json:"Contact,omitempty" yaml:"contact,omitempty"`
+
+	// CACert is an optional parameter that holds the CA certificate in PEM format.
+	// This is used to trust the TLS certificate signed by an internal CA when interacting
+	// with some OIDC providers, preventing x509 certificate verification failures.
+	CACert string `json:"CACert,omitempty" yaml:"ca-cert,omitempty"`
 }
 
 func metaRegex(issuer string) (*regexp.Regexp, error) {
@@ -187,9 +193,8 @@ func (fc *FulcioConfig) GetVerifier(issuerURL string, opts ...InsecureOIDCConfig
 	}
 
 	// Look in the LRU cache for a verifier
-	untyped, ok := fc.lru.Get(issuerURL)
+	v, ok = fc.lru.Get(issuerURL)
 	if ok {
-		v := untyped.([]*verifierWithConfig)
 		for _, c := range v {
 			if reflect.DeepEqual(c.Config, cfg) {
 				return c.IDTokenVerifier, true
@@ -200,16 +205,39 @@ func (fc *FulcioConfig) GetVerifier(issuerURL string, opts ...InsecureOIDCConfig
 	// If this issuer hasn't been recently used, or we have special config options, then create a new verifier
 	// and add it to the LRU cache.
 
+	var client *http.Client
+	if iss.CACert != "" {
+		rootCAs, _ := x509.SystemCertPool()
+		if rootCAs == nil {
+			rootCAs = x509.NewCertPool()
+		}
+		if ok := rootCAs.AppendCertsFromPEM([]byte(iss.CACert)); !ok {
+			log.Logger.Warnf("Failed to append custom CA cert for issuer URL %q", issuerURL)
+			return nil, false
+		}
+
+		transport := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:    rootCAs,
+				MinVersion: tls.VersionTLS12,
+			},
+		}
+		client = &http.Client{Transport: transport}
+	} else {
+		client = http.DefaultClient
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), defaultOIDCDiscoveryTimeout)
 	defer cancel()
-	provider, err := oidc.NewProvider(ctx, issuerURL)
+
+	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, client), issuerURL)
 	if err != nil {
 		log.Logger.Warnf("Failed to create provider for issuer URL %q: %v", issuerURL, err)
 		return nil, false
 	}
 
 	vwf := &verifierWithConfig{provider.Verifier(cfg), cfg}
-	if untyped == nil {
+	if v == nil {
 		v = []*verifierWithConfig{vwf}
 	} else {
 		v = append(v, vwf)
@@ -298,7 +326,7 @@ func (fc *FulcioConfig) prepare() error {
 		}
 	}
 
-	cache, err := lru.New2Q(100 /* size */)
+	cache, err := lru.New2Q[string, []*verifierWithConfig](100 /* size */)
 	if err != nil {
 		return fmt.Errorf("lru: %w", err)
 	}
@@ -343,6 +371,13 @@ func validateConfig(conf *FulcioConfig) error {
 	}
 
 	for _, issuer := range conf.OIDCIssuers {
+		if issuer.CACert != "" {
+			rootCAs := x509.NewCertPool()
+			if ok := rootCAs.AppendCertsFromPEM([]byte(issuer.CACert)); !ok {
+				return fmt.Errorf("failed to parse CA certificate for issuer %s", issuer.IssuerURL)
+			}
+		}
+
 		if issuer.IssuerClaim != "" && issuer.Type != IssuerTypeEmail {
 			return errors.New("only email issuers can use issuer claim mapping")
 		}
@@ -420,6 +455,13 @@ func validateConfig(conf *FulcioConfig) error {
 	}
 
 	for _, metaIssuer := range conf.MetaIssuers {
+		if metaIssuer.CACert != "" {
+			rootCAs := x509.NewCertPool()
+			if ok := rootCAs.AppendCertsFromPEM([]byte(metaIssuer.CACert)); !ok {
+				return fmt.Errorf("failed to parse CA certificate for meta issuer %s", metaIssuer.IssuerURL)
+			}
+		}
+
 		if metaIssuer.Type == IssuerTypeSpiffe {
 			// This would establish a many to one relationship for OIDC issuers
 			// to trust domains so we fail early and reject this configuration.
@@ -484,7 +526,7 @@ func validateCIIssuerMetadata(fulcioConfig *FulcioConfig) error {
 
 	for _, ciIssuerMetadata := range fulcioConfig.CIIssuerMetadata {
 		v := reflect.ValueOf(ciIssuerMetadata.ExtensionTemplates)
-		for i := 0; i < v.NumField(); i++ {
+		for i := range v.NumField() {
 			s := v.Field(i).String()
 			err := checkParse(s)
 			if err != nil {
