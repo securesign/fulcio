@@ -32,7 +32,7 @@ jobs:
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
@@ -76,17 +76,17 @@ jobs:
       - name: Extract version of Go to use
         run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
 
-      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
 
-      - uses: ko-build/setup-ko@d982fec422852203cfb2053a8ec6ad302280d04d # v0.8
+      - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
       - name: Setup Cluster
-        uses: chainguard-dev/actions/setup-kind@29fb6e979a0b3efc79748a17e8cec08d0594cbfd # main
+        uses: chainguard-dev/actions/setup-kind@ce51233d303aed2394a9976e7f5642fd2158f693 # v1.1.1
         with:
-          k8s-version: 1.26.x
+          k8s-version: 1.31.x
           registry-authority: ${{ env.REGISTRY_NAME }}:${{ env.REGISTRY_PORT }}
 
       - name: Generate temporary CA files
@@ -172,18 +172,15 @@ jobs:
                 automountServiceAccountToken: false
                 containers:
                 - name: check-oidc
-                  image: gcr.io/projectsigstore/cosign:v1.12.0
+                  image: ghcr.io/sigstore/cosign/cosign:v2.5.0-dev@sha256:d6786d0b31f9577ed6cc1f7fb5080f2335f0cbff2cfceffef5043ee83ebc3a6e
                   args: [
                     "sign",
                     "--fulcio-url=http://fulcio-server.fulcio-system.svc",
                     "--insecure-skip-verify=true",
                     "--upload=false",
+                    "--yes",
                     "${DIGEST}",
                   ]
-
-                  env:
-                  - name: COSIGN_EXPERIMENTAL
-                    value: "true"
                   volumeMounts:
                   - name: oidc-info
                     mountPath: /var/run/sigstore/cosign
@@ -222,4 +219,4 @@ jobs:
 
       - name: Collect diagnostics and upload
         if: ${{ failure() }}
-        uses: chainguard-dev/actions/kind-diag@29fb6e979a0b3efc79748a17e8cec08d0594cbfd # main
+        uses: chainguard-dev/actions/kind-diag@ce51233d303aed2394a9976e7f5642fd2158f693 # v1.1.1

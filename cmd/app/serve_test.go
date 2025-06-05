@@ -31,6 +31,8 @@ import (
 	"github.com/sigstore/fulcio/pkg/ca/ephemeralca"
 	"github.com/sigstore/fulcio/pkg/config"
 	"github.com/sigstore/fulcio/pkg/generated/protobuf"
+	v1 "github.com/sigstore/protobuf-specs/gen/pb-go/common/v1"
+	"github.com/sigstore/sigstore/pkg/signature"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -48,9 +50,13 @@ func TestDuplex(t *testing.T) {
 		t.Fatal(err)
 	}
 	metricsPort := 2114
+	algorithmRegistry, err := signature.NewAlgorithmRegistryConfig([]v1.PublicKeyDetails{})
+	if err != nil {
+		t.Error(err)
+	}
 
 	go func() {
-		if err := StartDuplexServer(ctx, config.DefaultConfig, nil, ca, "localhost", port, metricsPort, nil); err != nil {
+		if err := StartDuplexServer(ctx, config.DefaultConfig, nil, ca, algorithmRegistry, "localhost", port, metricsPort, nil); err != nil {
 			log.Fatalf("error starting duplex server: %v", err)
 		}
 	}()
@@ -111,6 +117,17 @@ func TestDuplex(t *testing.T) {
 		// this just confirms some metrics are being printed
 		if !strings.Contains(string(contents), "GetTrustBundle") {
 			t.Fatalf("didn't get expected metrics output: %s", string(contents))
+		}
+	})
+
+	t.Run("healthz", func(t *testing.T) {
+		url := fmt.Sprintf("http://localhost:%d/healthz", port)
+		resp, err := http.Get(url)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if code := resp.StatusCode; code != 200 {
+			t.Fatalf("/healthz returned status code %d, want 200", code)
 		}
 	})
 }
