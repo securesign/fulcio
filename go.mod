@@ -1,10 +1,12 @@
 module github.com/sigstore/fulcio
 
-go 1.24.5
+go 1.24.0
+
+toolchain go1.24.5
 
 require (
 	chainguard.dev/go-grpc-kit v0.17.11
-	chainguard.dev/sdk v0.1.35
+	chainguard.dev/sdk v0.1.29
 	cloud.google.com/go/security v1.19.0
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/ThalesGroup/crypto11 v1.4.1
