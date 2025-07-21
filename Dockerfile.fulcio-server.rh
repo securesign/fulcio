@@ -14,8 +14,12 @@
 # limitations under the License.
 
 FROM registry.redhat.io/ubi9/go-toolset:1.24@sha256:6fd64cd7f38a9b87440f963b6c04953d04de65c35b9672dbd7f1805b0ae20d09 AS builder
+ARG TARGETOS
+ARG TARGETARCH
 ENV APP_ROOT=/opt/app-root
 ENV GOPATH=$APP_ROOT
+ENV GOEXPERIMENT=strictfipsruntime
+ENV CGO_ENABLED=1
 
 WORKDIR $APP_ROOT/src/
 ADD go.mod go.sum $APP_ROOT/src/
@@ -23,7 +27,7 @@ ADD go.mod go.sum $APP_ROOT/src/
 ADD ./ $APP_ROOT/src/
 
 RUN go mod download && \
-    go build -mod=readonly -o server main.go
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -mod=readonly -o server main.go
 
 # Multi-Stage production build
 FROM registry.access.redhat.com/ubi9-minimal@sha256:f172b3082a3d1bbe789a1057f03883c1113243564f01cd3020e27548b911d3f8 as deploy

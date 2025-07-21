@@ -13,12 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.3@sha256:81bf5927dc91aefb42e2bc3a5abdbe9bb3bae8ba8b107e2a4cf43ce3402534c6 AS builder
+FROM golang:1.24 as builder
+ARG TARGETOS
+ARG TARGETARCH
 ENV APP_ROOT=/opt/app-root
 ENV GOPATH=$APP_ROOT
 
 WORKDIR $APP_ROOT/src/
-ADD go.mod go.sum $APP_ROOT/src/
+COPY go.mod go.sum ./
 RUN go mod download
 
 # Add source code
