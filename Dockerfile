@@ -20,7 +20,7 @@ ENV APP_ROOT=/opt/app-root
 ENV GOPATH=$APP_ROOT
 
 WORKDIR $APP_ROOT/src/
-COPY go.mod go.sum ./
+ADD go.mod go.sum $APP_ROOT/src/
 RUN go mod download
 
 # Add source code
