@@ -36,8 +36,6 @@ spec:
     value: [{"path": ".", "type": "gomod"}, {"path": "./hack/tools", "type": "gomod"}]
   - name: go_unit_test
     value: true
-  - name: go_base_image
-    value: brew.registry.redhat.io/rh-osbs/openshift-golang-builder:rhel_9_1.23@sha256:4805e1cb2d1bd9d3c5de5d6986056bbda94ca7b01642f721d83d26579d333c60
   taskRunSpecs:
     - pipelineTaskName: run-unit-test
       serviceAccountName: appstudio-pipeline
