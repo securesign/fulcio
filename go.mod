@@ -51,24 +51,9 @@ require (
 )
 
 require (
-	bitbucket.org/creachadair/stringset v0.0.12 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.3.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
-	github.com/bufbuild/protocompile v0.14.1 // indirect
-	github.com/fatih/color v1.18.0 // indirect
-	github.com/gertd/go-pluralize v0.2.1 // indirect
-	github.com/googleapis/api-linter v1.69.2 // indirect
-	github.com/jhump/protoreflect v1.17.0 // indirect
-	github.com/mattn/go-colorable v0.1.14 // indirect
-	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/mattn/go-runewidth v0.0.16 // indirect
-	github.com/olekukonko/errors v0.0.0-20250405072817-4e6d85265da6 // indirect
-	github.com/olekukonko/ll v0.0.8 // indirect
-	github.com/olekukonko/tablewriter v1.0.8 // indirect
-	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/stoewer/go-strcase v1.3.0 // indirect
 )
 
 require (
