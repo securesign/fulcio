@@ -38,7 +38,6 @@ LABEL io.openshift.tags="fulcio trusted-signer"
 LABEL summary="Provides the Fulcio CA for keyless signing with Red Hat Trusted Signer."
 LABEL com.redhat.component="fulcio"
 LABEL name="rhtas/fulcio-rhel9"
-LABEL cpe="cpe:/a:redhat:trusted_artifact_signer:1.2::el9"
 
 # Retrieve the binary from the previous stage
 COPY --from=builder /opt/app-root/src/server /usr/local/bin/fulcio-server
