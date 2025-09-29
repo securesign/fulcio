@@ -50,7 +50,7 @@ spec:
       - name: url
         value: 'https://github.com/securesign/pipelines.git'
       - name: revision
-        value: 'tdalton/CPELabel'
+        value: 'tdalton/TestLimitBump'
       - name: pathInRepo
         value: 'pipelines/docker-build-oci-ta.yaml'
   taskRunTemplate: {}
