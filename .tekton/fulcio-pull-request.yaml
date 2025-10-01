@@ -18,7 +18,7 @@ metadata:
   namespace: rhtas-tenant
 spec:
   params:
-  - name: dockerfile
+  - name: sealights-dockerfile
     value: Dockerfile.fulcio-server.rh
   - name: git-url
     value: '{{repo_url}}'
@@ -31,7 +31,7 @@ spec:
   - name: revision
     value: '{{revision}}'
   - name: build-source-image
-    value: "true"
+    value: "false"
   - name: hermetic
     value: "true"
   - name: prefetch-input
