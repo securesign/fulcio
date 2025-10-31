@@ -36,12 +36,15 @@ spec:
     value: [{"path": ".", "type": "gomod"}, {"path": "./hack/tools", "type": "gomod"}]
   - name: go_unit_test
     value: true
+  - name: fips-check
+    value: "true"
   taskRunSpecs:
-    - pipelineTaskName: run-unit-test
-      serviceAccountName: appstudio-pipeline
-      podTemplate:
-        imagePullSecrets:
-        - name: brew-registry-pull-secret
+  - pipelineTaskName: run-unit-test
+    stepSpecs:
+    - computeResources:
+        limits:
+          memory: 4Gi
+      name: run-tests
   pipelineRef:
     resolver: git
     params:
