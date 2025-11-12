@@ -40,7 +40,7 @@ spec:
     value: true
   taskRunSpecs:
     - pipelineTaskName: run-unit-test
-      serviceAccountName: appstudio-pipeline
+      serviceAccountName: build-pipeline-fulcio-server
       podTemplate:
         imagePullSecrets:
         - name: brew-registry-pull-secret
@@ -53,7 +53,8 @@ spec:
         value: 'main'
       - name: pathInRepo
         value: 'pipelines/docker-build-oci-ta.yaml'
-  taskRunTemplate: {}
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-fulcio-server
   workspaces:
   - name: git-auth
     secret:
