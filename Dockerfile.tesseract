@@ -1,5 +1,4 @@
-#
-# Copyright 2021 The Sigstore Authors.
+# Copyright 2025 The Sigstore Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.24.3@sha256:81bf5927dc91aefb42e2bc3a5abdbe9bb3bae8ba8b107e2a4cf43ce3402534c6 AS builder
+# Rebuild the tesseract image using the golang case in order to get the curl binary for the docker-compose healthcheck.
 
-WORKDIR /root/
+FROM ghcr.io/sigstore/scaffolding/tesseract/posix:v0.1.1-0.20251112113307-52b154e44576 AS server
 
-RUN go install github.com/google/trillian/cmd/createtree@v1.6.0
-ADD ./config/logid.sh /root/
-ADD ./config/ctfe /root/ctfe
-RUN chmod +x /root/logid.sh
+FROM golang:1.25.5@sha256:a22b2e6c5e753345b9759fba9e5c1731ebe28af506745e98f406cc85d50c828e AS deploy
 
-CMD ["/root/logid.sh"]
+COPY --from=server /ko-app/posix /usr/local/bin/tesseract
+
+ENTRYPOINT ["tesseract"]
