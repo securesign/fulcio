@@ -37,10 +37,10 @@ jobs:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
 
-      - name: Install kubeval
-        run: go install github.com/instrumenta/kubeval@v0.16.1
+      - name: Install kubeconform
+        run: go install github.com/yannh/kubeconform/cmd/kubeconform@latest
 
-      - run: kubeval config/*.yaml
+      - run: kubeconform -strict config/*.yaml
 
   verify-k8s-deployment:
     runs-on: ubuntu-latest
