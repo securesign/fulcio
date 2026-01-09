@@ -17,6 +17,7 @@ define:
   - &gitlab-type "gitlab-pipeline"
   - &codefresh-type "codefresh-workflow"
   - &buildkite-type "buildkite-job"
+  - &circleci-type "circleci-job"
 oidc-issuers:
   https://accounts.google.com:
     issuer-url: https://accounts.google.com
@@ -31,8 +32,8 @@ oidc-issuers:
     ci-provider: *buildkite-type
     contact: support@buildkite.com
     description: "Buildkite Agent OIDC tokens for job identity"
-  https://auth.eclipse.org/auth/realms/sigstore:
-    issuer-url: https://auth.eclipse.org/auth/realms/sigstore
+  https://auth.eclipse.org/auth/realms/foundation-service-accounts:
+    issuer-url: https://auth.eclipse.org/auth/realms/foundation-service-accounts
     client-id: sigstore
     type: email
     contact: security@eclipse-foundation.org
@@ -63,6 +64,12 @@ oidc-issuers:
     client-id: sigstore
     type: chainguard-identity
     contact: mattmoor@chainguard.dev
+    description: "Chainguard identity tokens"
+  https://issuer.chainops.dev:
+    issuer-url: https://issuer.chainops.dev
+    client-id: sigstore
+    type: chainguard-identity
+    contact: priya@chainguard.dev
     description: "Chainguard identity tokens"
   https://issuer.hello.coop:
     issuer-url: https://issuer.hello.coop
@@ -117,6 +124,12 @@ meta-issuers:
   https://container.googleapis.com/v1/projects/*/locations/*/clusters/*:
     client-id: sigstore
     type: kubernetes
+  https://oidc.circleci.com/org/*:
+    client-id: sigstore
+    type: ci-provider
+    ci-provider: *circleci-type
+    # contact: security@circleci.com
+    # description: "CircleCI OIDC tokens"
   https://oidc.eks.*.amazonaws.com/id/*:
     client-id: sigstore
     type: kubernetes
@@ -132,6 +145,8 @@ ci-issuer-metadata:
     default-template-values:
       # url: URL of issuer, https://github.com
       url: "https://github.com"
+      # Nil default value to handle optional environment claim
+      environment: ""
     extension-templates:
       # event_name: Event that triggered this workflow run. E.g "push", "tag"
       github-workflow-trigger: "event_name"
@@ -169,10 +184,14 @@ ci-issuer-metadata:
       run-invocation-uri: "{{ .url }}/{{ .repository }}/actions/runs/{{ .run_id }}/attempts/{{ .run_attempt }}"
       # repository_visibility: Visibility of the source repo
       source-repository-visibility-at-signing: "repository_visibility"
+      # environment: Deployment target for workflow (optional)
+      deployment-environment: "environment"
     subject-alternative-name-template: "{{ .url }}/{{ .job_workflow_ref }}"
   *gitlab-type:
     default-template-values:
       url: "https://gitlab.com"
+      # Nil default value to handle optional environment claim
+      environment: ""
     extension-templates:
       # url: The URL of the GitLab instance. https://gitlab.com
       # ci_config_ref_uri: Ref of top-level pipeline definition.
@@ -206,6 +225,8 @@ ci-issuer-metadata:
       run-invocation-uri: "{{ .url }}/{{ .project_path }}/-/jobs/{{ .job_id }}"
       # project_visibility: Visibility of the source project
       source-repository-visibility-at-signing: "project_visibility"
+      # environment: Deployment target for job (optional)
+      deployment-environment: "environment"
     subject-alternative-name-template: "https://{{ .ci_config_ref_uri }}"
   *codefresh-type:
     default-template-values:
@@ -252,3 +273,21 @@ ci-issuer-metadata:
       # build_source: Event that triggered this workflow run. (valid values: api, ui, webhook, trigger_job, schedule)
       build-trigger: "build_source"
     subject-alternative-name-template: "{{.url}}/{{.organization_slug}}/{{.pipeline_slug}}" # seems correct, do we still need the code in pkg/identity/buildkite/principal.go ?
+  *circleci-type:
+    default-template-values:
+      # principal gives priority to the claimed value over the default
+      api_url: "https://circleci.com/api/v2"
+    extension-templates:
+      # NOTE: Because of how the text/template parsing works with / and . characters,
+      # we use " inside our template fragments which is why we use ' to wrap
+
+      # this API call leads back to the exact generated config used for this run
+      build-config-uri: '{{.api_url}}/pipeline/{{(index . "oidc.circleci.com/pipeline-id")}}/config'
+      # this API call leads back to the definition of the pipeline used for this run
+      # https://circleci.com/api/v2/projects/{project_id}/pipeline-definitions/{pipeline_definition_id}
+      build-signer-uri: '{{.api_url}}/projects/{{(index . "oidc.circleci.com/project-id")}}/pipeline-definitions/{{(index . "oidc.circleci.com/pipeline-definition-id")}}'
+      run-invocation-uri: '{{.api_url}}/workflow/{{(index . "oidc.circleci.com/workflow-id")}}/job'
+      runner-environment: '{{if eq (index . "oidc.circleci.com/ssh-rerun") "true"}}ssh-rerun{{ else }}""{{end}}'
+      source-repository-ref: '{{index . "oidc.circleci.com/vcs-ref"}}'
+      source-repository-uri: '{{index . "oidc.circleci.com/vcs-origin"}}'
+    subject-alternative-name-template: '{{.api_url}}/projects/{{(index . "oidc.circleci.com/project-id")}}/pipeline-definitions/{{(index . "oidc.circleci.com/pipeline-definition-id")}}'
