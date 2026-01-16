@@ -11,7 +11,7 @@ metadata:
     # pipelinesascode.tekton.dev/task: "[.tekton/fulcio-unit-test.yaml]"
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: fulcio
+    appstudio.openshift.io/application: tas-components
     appstudio.openshift.io/component: fulcio-server
     pipelines.appstudio.openshift.io/type: build
   name: fulcio-server-on-pull-request
