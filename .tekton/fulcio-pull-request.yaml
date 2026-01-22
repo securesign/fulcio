@@ -40,7 +40,7 @@ spec:
     value: true
   taskRunSpecs:
     - pipelineTaskName: run-unit-test
-      serviceAccountName: appstudio-pipeline
+      serviceAccountName: build-pipeline-fulcio-server-v1-2
       podTemplate:
         imagePullSecrets:
         - name: brew-registry-pull-secret
