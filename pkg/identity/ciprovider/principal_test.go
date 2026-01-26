@@ -59,6 +59,7 @@ func TestWorkflowPrincipalFromIDToken(t *testing.T) {
 						BuildTrigger:                        "event_name",
 						RunInvocationURI:                    "{{ .url }}/{{ .repository }}/actions/runs/{{ .run_id }}/attempts/{{ .run_attempt }}",
 						SourceRepositoryVisibilityAtSigning: "repository_visibility",
+						DeploymentEnvironment:               "environment",
 					},
 					DefaultTemplateValues: map[string]string{
 						"url": "https://github.com",
@@ -89,6 +90,7 @@ func TestWorkflowPrincipalFromIDToken(t *testing.T) {
 				"run_id":                "runID",
 				"run_attempt":           "runAttempt",
 				"repository_visibility": "public",
+				"environment":           "production",
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -163,6 +165,7 @@ func TestName(t *testing.T) {
 				"workflow":              "foo",
 				"workflow_ref":          "sigstore/other/.github/workflows/foo.yaml@refs/heads/main",
 				"workflow_sha":          "example-sha-other",
+				"environment":           "production",
 			},
 			ExpectName: "repo:sigstore/fulcio:ref:refs/heads/main",
 		},
@@ -335,6 +338,7 @@ func TestApplyTemplateOrReplace(t *testing.T) {
 		"ref_tag":               "1.0.0",
 		"html_claim":            "<alert()/>",
 		"claim_foo":             "bar",
+		"with.dot.and/slash":    "cat",
 	}
 	issuerMetadata := map[string]string{
 		"url":         "https://github.com",
@@ -394,6 +398,11 @@ func TestApplyTemplateOrReplace(t *testing.T) {
 			ExpectedResult: "refs/tags/1.0.0",
 			ExpectErr:      false,
 		},
+		`Template with slash and dots in key`: {
+			Template:       `{{ .aud }}/{{(index . "with.dot.and/slash")}}`,
+			ExpectedResult: "sigstore/cat",
+			ExpectErr:      false,
+		},
 		`Raise error for empty key in comparison`: {
 			Template:       `{{if eq . ""}}foo{{else}}bar{{end}}`,
 			ExpectedResult: "",
@@ -410,6 +419,16 @@ func TestApplyTemplateOrReplace(t *testing.T) {
 			ExpectErr:      false,
 		},
 		`Should return empty string for empty default`: {
+			Template:       "empty_value",
+			ExpectedResult: "",
+			ExpectErr:      false,
+		},
+		`Should return empty string for empty default wrapped in template`: {
+			Template:       "{{ .empty_value }}",
+			ExpectedResult: "",
+			ExpectErr:      false,
+		},
+		`Should return empty string for empty default with template and additional value`: {
 			Template:       "{{ .empty_value }}/123",
 			ExpectedResult: "/123",
 			ExpectErr:      false,
@@ -437,6 +456,7 @@ func TestApplyTemplateOrReplace(t *testing.T) {
 func TestEmbed(t *testing.T) {
 	tests := map[string]struct {
 		WantFacts map[string]func(x509.Certificate) error
+		Claims    map[string]any
 		Principal ciPrincipal
 	}{
 		`GitHub workflow challenge should have all GitHub workflow extensions and issuer set`: {
@@ -462,6 +482,26 @@ func TestEmbed(t *testing.T) {
 				`Certificate has correct build trigger extension`:                factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 20}, "trigger"),
 				`Certificate has correct run invocation ID extension`:            factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 21}, "https://github.com/repository/actions/runs/runID/attempts/runAttempt"),
 				`Certificate has correct source repository visibility extension`: factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 22}, "public"),
+				`Certificate has correct environment`:                            factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 23}, "production"),
+			},
+			Claims: map[string]any{
+				"event_name":            "trigger",
+				"sha":                   "sha",
+				"workflow":              "workflowname",
+				"repository":            "repository",
+				"ref":                   "ref",
+				"job_workflow_sha":      "jobWorkflowSha",
+				"job_workflow_ref":      "jobWorkflowRef",
+				"runner_environment":    "runnerEnv",
+				"repository_id":         "repoID",
+				"repository_owner":      "repoOwner",
+				"repository_owner_id":   "repoOwnerID",
+				"workflow_ref":          "workflowRef",
+				"workflow_sha":          "workflowSHA",
+				"run_id":                "runID",
+				"run_attempt":           "runAttempt",
+				"repository_visibility": "public",
+				"environment":           "production",
 			},
 			Principal: ciPrincipal{
 				ClaimsMetadata: config.IssuerMetadata{
@@ -485,20 +525,42 @@ func TestEmbed(t *testing.T) {
 						BuildTrigger:                        "event_name",
 						RunInvocationURI:                    "{{ .url }}/{{ .repository }}/actions/runs/{{ .run_id }}/attempts/{{ .run_attempt }}",
 						SourceRepositoryVisibilityAtSigning: "repository_visibility",
+						DeploymentEnvironment:               "environment",
 					},
 					DefaultTemplateValues: map[string]string{
-						"url": "https://github.com",
+						"url":         "https://github.com",
+						"environment": "",
 					},
 					SubjectAlternativeNameTemplate: "{{.url}}/{{.job_workflow_ref}}",
 				},
 			},
 		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			var cert x509.Certificate
-			claims, err := json.Marshal(map[string]any{
+		`GitHub workflow challenge without environment claim should not have environment extension`: {
+			WantFacts: map[string]func(x509.Certificate) error{
+				`Certifificate should have correct issuer`:                       factDeprecatedExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 1}, "https://token.actions.githubusercontent.com"),
+				`Certificate has correct trigger extension`:                      factDeprecatedExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 2}, "trigger"),
+				`Certificate has correct SHA extension`:                          factDeprecatedExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 3}, "sha"),
+				`Certificate has correct workflow extension`:                     factDeprecatedExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 4}, "workflowname"),
+				`Certificate has correct repository extension`:                   factDeprecatedExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 5}, "repository"),
+				`Certificate has correct ref extension`:                          factDeprecatedExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 6}, "ref"),
+				`Certificate has correct issuer (v2) extension`:                  factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 8}, "https://token.actions.githubusercontent.com"),
+				`Certificate has correct builder signer URI extension`:           factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 9}, "https://github.com/jobWorkflowRef"),
+				`Certificate has correct builder signer digest extension`:        factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 10}, "jobWorkflowSha"),
+				`Certificate has correct runner environment extension`:           factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 11}, "runnerEnv"),
+				`Certificate has correct source repo URI extension`:              factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 12}, "https://github.com/repository"),
+				`Certificate has correct source repo digest extension`:           factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 13}, "sha"),
+				`Certificate has correct source repo ref extension`:              factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 14}, "ref"),
+				`Certificate has correct source repo ID extension`:               factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 15}, "repoID"),
+				`Certificate has correct source repo owner URI extension`:        factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 16}, "https://github.com/repoOwner"),
+				`Certificate has correct source repo owner ID extension`:         factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 17}, "repoOwnerID"),
+				`Certificate has correct build config URI extension`:             factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 18}, "https://github.com/workflowRef"),
+				`Certificate has correct build config digest extension`:          factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 19}, "workflowSHA"),
+				`Certificate has correct build trigger extension`:                factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 20}, "trigger"),
+				`Certificate has correct run invocation ID extension`:            factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 21}, "https://github.com/repository/actions/runs/runID/attempts/runAttempt"),
+				`Certificate has correct source repository visibility extension`: factExtensionIs(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 22}, "public"),
+				`Certificate should not have environment extension`:              factExtensionIsMissing(asn1.ObjectIdentifier{1, 3, 6, 1, 4, 1, 57264, 1, 23}),
+			},
+			Claims: map[string]any{
 				"event_name":            "trigger",
 				"sha":                   "sha",
 				"workflow":              "workflowname",
@@ -515,7 +577,45 @@ func TestEmbed(t *testing.T) {
 				"run_id":                "runID",
 				"run_attempt":           "runAttempt",
 				"repository_visibility": "public",
-			})
+			},
+			Principal: ciPrincipal{
+				ClaimsMetadata: config.IssuerMetadata{
+					ExtensionTemplates: certificate.Extensions{
+						GithubWorkflowTrigger:               "event_name",
+						GithubWorkflowSHA:                   "sha",
+						GithubWorkflowName:                  "workflow",
+						GithubWorkflowRepository:            "repository",
+						GithubWorkflowRef:                   "ref",
+						BuildSignerURI:                      "{{ .url }}/{{ .job_workflow_ref }}",
+						BuildSignerDigest:                   "job_workflow_sha",
+						RunnerEnvironment:                   "runner_environment",
+						SourceRepositoryURI:                 "{{ .url }}/{{ .repository }}",
+						SourceRepositoryDigest:              "sha",
+						SourceRepositoryRef:                 "ref",
+						SourceRepositoryIdentifier:          "repository_id",
+						SourceRepositoryOwnerURI:            "{{ .url }}/{{ .repository_owner }}",
+						SourceRepositoryOwnerIdentifier:     "repository_owner_id",
+						BuildConfigURI:                      "{{ .url }}/{{ .workflow_ref }}",
+						BuildConfigDigest:                   "workflow_sha",
+						BuildTrigger:                        "event_name",
+						RunInvocationURI:                    "{{ .url }}/{{ .repository }}/actions/runs/{{ .run_id }}/attempts/{{ .run_attempt }}",
+						SourceRepositoryVisibilityAtSigning: "repository_visibility",
+						DeploymentEnvironment:               "environment",
+					},
+					DefaultTemplateValues: map[string]string{
+						"url":         "https://github.com",
+						"environment": "",
+					},
+					SubjectAlternativeNameTemplate: "{{.url}}/{{.job_workflow_ref}}",
+				},
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			var cert x509.Certificate
+			claims, err := json.Marshal(test.Claims)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -552,6 +652,17 @@ func factExtensionIs(oid asn1.ObjectIdentifier, value string) func(x509.Certific
 			}
 		}
 		return errors.New("extension not set")
+	}
+}
+
+func factExtensionIsMissing(oid asn1.ObjectIdentifier) func(x509.Certificate) error {
+	return func(cert x509.Certificate) error {
+		for _, ext := range cert.ExtraExtensions {
+			if ext.Id.Equal(oid) {
+				return fmt.Errorf("expected oid %v to be missing, but it was found", oid)
+			}
+		}
+		return nil
 	}
 }
 

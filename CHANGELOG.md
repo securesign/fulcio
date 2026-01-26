@@ -1,3 +1,62 @@
+# v1.8.5
+
+## Vulnerability Fixes
+
+* https://github.com/sigstore/fulcio/security/advisories/GHSA-59jp-pj84-45mr - Server-side request forgery via MetaIssuer regex bypass (#2263)
+
+# v1.8.4
+
+Same changelog as v1.8.3, with a few dependency bumps to resolve a breaking API change
+
+# v1.8.3
+
+## Vulnerability Fixes
+
+* https://github.com/sigstore/fulcio/security/advisories/GHSA-f83f-xpx7-ffpw; prevents OOM condition due to malformed OIDC token (#2233)
+
+## Features
+
+* feat: Add support for skipping email_verified claim requirement per issuer (#2220)
+* add meta-issuer circleci block (#2215)
+* add circleci info to fulcio (#2192)
+
+## Testing
+
+* Add basic E2E tests (#2230)
+
+# v1.8.2
+
+## Testing
+
+* make email address in test cases rfc822 conformant (#2205)
+
+# v1.8.1
+
+Same as v1.8.0, but with a fix for the CI build pipeline.
+
+# v1.8.0
+
+## Bug Fixes
+
+* fix: K8s API does not accept unauthorized requests (#2111)
+* fix: vault for enterprise expects only the key name (#2117)
+* fix(config): respect cacert on oidc-issuers (#2098)
+* Register `/healthz` endpoint when listening on duplex http/grpc port (#2046)
+
+## Features
+
+* feat: adds cert loading and key-match validation. (#2173)
+* expose gcp kms retry and timeout options (#2132)
+* server: Use warning log level for client errors (#2147)
+* Add workflow to periodically validate OIDC issuers (#2188)
+* Add Chainguard issuer (#2078)
+* Add logging for template error (#2194)
+* Add extension for deployment environment (#2190)
+
+## Removal
+
+* Remove cmd/create_tink_keyset (#2096)
+
 # v1.7.1
 
 v1.7.1 contains a bug fix for extensions for CI providers where the OIDC claims
@@ -5,7 +64,7 @@ include HTML escape characters. If a client attempted to verify an extension val
 verification would fail unless an HTML-escaped string was used in the comparison.
 Extension values will no longer be escaped.
 
-## Bug Fixes:
+## Bug Fixes
 
 * Do not HTML-escape extension values (#2023)
 

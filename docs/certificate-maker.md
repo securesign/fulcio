@@ -45,6 +45,7 @@ Available flags:
 - `--gcp-credentials-file`: Path to credentials file (for Google Cloud KMS)
 - `--vault-address`: HashiCorp Vault address
 - `--vault-token`: HashiCorp Vault token
+- `--vault-namespace`: HashiCorp Vault namespace (for Vault Enterprise)
 
 - `--root-template`: Path to root certificate template
 - `--root-lifetime`: Root certificate lifetime (default: 87600h, 10 years)
@@ -74,6 +75,7 @@ Available flags:
 
 - `VAULT_ADDR`: HashiCorp Vault address
 - `VAULT_TOKEN`: HashiCorp Vault token
+- `VAULT_NAMESPACE`: HashiCorp Vault namespace (if using Vault Enterprise with namespaces)
 
 ### Certificate Templates
 
@@ -88,6 +90,193 @@ If no custom templates are provided via flags, the tool will automatically use t
 More info on configuring templates can be found here:
 
 - [X.509 Templates](https://smallstep.com/docs/step-ca/templates/#x509-templates)
+
+### Certificate Reuse
+
+The certificate-maker tool supports reusing existing root and intermediate certificates instead of generating new ones. This is useful when you want to maintain a stable certificate hierarchy while issuing new certificates.
+
+#### When to Reuse Certificates
+
+**Reuse existing certificates when:**
+
+- You have a long-lived root CA that should remain stable
+- You want to issue new intermediate or leaf certificates from an existing root
+- You're rotating leaf certificates but want to keep the same certificate chain
+- You need to maintain certificate continuity across deployments
+
+**Generate new certificates when:**
+
+- Setting up a brand new certificate infrastructure
+- The existing certificates are expired or compromised
+- You're changing the certificate hierarchy or trust chain
+
+#### Certificate Reuse Flags
+
+- `--existing-root-cert`: Path to an existing root certificate PEM file
+- `--existing-intermediate-cert`: Path to an existing intermediate certificate PEM file
+
+**Corresponding environment variables:**
+
+- `EXISTING_ROOT_CERT`
+- `EXISTING_INTERMEDIATE_CERT`
+
+#### Decision Guide
+
+```
+Need certificates?
+├─ Fresh start / No existing certs
+│  └─ Generate all (root + intermediate + leaf)
+│     Example: Standard workflow below
+│
+└─ Have existing certificates
+   ├─ Have root cert only
+   │  └─ Use --existing-root-cert
+   │     Generates: New intermediate + leaf
+   │
+   ├─ Have root + intermediate certs
+   │  └─ Use --existing-root-cert --existing-intermediate-cert
+   │     Generates: New leaf only
+   │
+   └─ Have root cert, want leaf directly
+      └─ Use --existing-root-cert (no --intermediate-key-id)
+         Generates: New leaf signed by root
+```
+
+#### Certificate Reuse Examples
+
+##### Example 1: Reuse Root, Generate Intermediate and Leaf (AWS KMS)
+
+```bash
+./certificate-maker create "https://fulcio.example.com" \
+  --kms-type awskms \
+  --aws-region us-east-1 \
+  --root-key-id alias/fulcio-root \
+  --existing-root-cert ./existing-root.pem \
+  --intermediate-key-id alias/fulcio-intermediate \
+  --leaf-key-id alias/fulcio-leaf \
+  --intermediate-cert intermediate.pem \
+  --leaf-cert leaf.pem
+```
+
+##### Example 2: Reuse Root and Intermediate, Generate Leaf Only (GCP KMS)
+
+```bash
+./certificate-maker create "https://fulcio.example.com" \
+  --kms-type gcpkms \
+  --gcp-credentials-file ~/.config/gcloud/application_default_credentials.json \
+  --root-key-id projects/<project>/locations/<loc>/keyRings/<ring>/cryptoKeys/root/cryptoKeyVersions/1 \
+  --existing-root-cert ./existing-root.pem \
+  --intermediate-key-id projects/<project>/locations/<loc>/keyRings/<ring>/cryptoKeys/intermediate/cryptoKeyVersions/1 \
+  --existing-intermediate-cert ./existing-intermediate.pem \
+  --leaf-key-id projects/<project>/locations/<loc>/keyRings/<ring>/cryptoKeys/leaf/cryptoKeyVersions/1 \
+  --leaf-cert leaf.pem
+```
+
+##### Example 3: Reuse Root, Generate Leaf Directly (Azure KMS)
+
+```bash
+./certificate-maker create "https://fulcio.example.com" \
+  --kms-type azurekms \
+  --azure-tenant-id 1b4a4fed-fed8-4823-a8a0-3d5cea83d122 \
+  --root-key-id "azurekms:name=root-key;vault=fulcio-vault" \
+  --existing-root-cert ./existing-root.pem \
+  --leaf-key-id "azurekms:name=leaf-key;vault=fulcio-vault" \
+  --leaf-cert leaf.pem
+```
+
+##### Example 4: Reuse Root with HashiCorp Vault
+
+```bash
+export VAULT_ADDR=https://vault.example.com:8200
+export VAULT_TOKEN=your-vault-token
+
+./certificate-maker create "https://fulcio.example.com" \
+  --kms-type hashivault \
+  --root-key-id root-key \
+  --existing-root-cert ./existing-root.pem \
+  --intermediate-key-id intermediate-key \
+  --leaf-key-id leaf-key \
+  --intermediate-cert intermediate.pem \
+  --leaf-cert leaf.pem
+```
+
+#### Using Environment Variables for Certificate Reuse
+
+```bash
+export KMS_TYPE=awskms
+export AWS_REGION=us-east-1
+export ROOT_KEY_ID=alias/fulcio-root
+export EXISTING_ROOT_CERT=./existing-root.pem
+export KMS_INTERMEDIATE_KEY_ID=alias/fulcio-intermediate
+export EXISTING_INTERMEDIATE_CERT=./existing-intermediate.pem
+export LEAF_KEY_ID=alias/fulcio-leaf
+
+./certificate-maker create "https://fulcio.example.com" \
+  --leaf-cert leaf.pem
+```
+
+#### Important Notes
+
+**Certificate-Key Matching:**
+
+- The existing certificate's public key MUST match the KMS key specified
+- The tool validates this match before proceeding
+- If keys don't match, you'll get a clear error message
+
+**Template Behavior:**
+
+- `--root-template` and `--existing-root-cert` are mutually exclusive (CLI enforces)
+- `--intermediate-template` and `--existing-intermediate-cert` are mutually exclusive (CLI enforces)
+- The loaded certificate's properties are used instead of template values
+
+**File Validation:**
+
+- Certificate files are validated before KMS initialization (fail fast)
+- Files must be PEM-encoded X.509 certificates
+- Clear error messages if files are missing or invalid
+
+#### Troubleshooting
+
+**Error: "existing root certificate file not found"**
+
+- **Cause:** The file path doesn't exist or is inaccessible
+- **Solution:** Verify the file path is correct and the file exists
+
+  ```bash
+  ls -la ./existing-root.pem
+  openssl x509 -in ./existing-root.pem -text -noout
+  ```
+
+**Error: "existing root certificate does not match root KMS key"**
+
+- **Cause:** The certificate's public key doesn't match the KMS key's public key
+- **Solution:** Ensure you're using the correct certificate for the specified KMS key
+
+  ```bash
+  # Extract public key from certificate
+  openssl x509 -in ./existing-root.pem -pubkey -noout > cert-pubkey.pem
+  
+  # Compare with KMS key (method varies by provider)
+  # For AWS KMS, use: aws kms get-public-key --key-id alias/fulcio-root
+  ```
+
+**Error: "invalid PEM format"**
+
+- **Cause:** The certificate file is not in valid PEM format
+- **Solution:** Verify the certificate is PEM-encoded
+
+  ```bash
+  # Check if file is PEM format
+  head -n 1 ./existing-root.pem
+  # Should show: -----BEGIN CERTIFICATE-----
+  
+  # Validate certificate
+  openssl x509 -in ./existing-root.pem -text -noout
+  ```
+
+**Mutually Exclusive Flags**
+
+- The CLI enforces that you cannot pass both a template flag and an existing certificate flag for the same certificate type. Provide only one of the pair.
 
 ### Provider-Specific Configuration Examples
 
@@ -124,12 +313,25 @@ export AZURE_TENANT_ID=83j229-83j229-83j229-83j229-83j229
 
 ```shell
 export KMS_TYPE=hashivault
-export ROOT_KEY_ID=transit/keys/root-key
-export KMS_INTERMEDIATE_KEY_ID=transit/keys/intermediate-key
-export LEAF_KEY_ID=transit/keys/leaf-key
-export VAULT_ADDR=http://vault:8200
-export VAULT_TOKEN=token
+# Key IDs should be just the key name, not the full transit path
+export ROOT_KEY_ID=root-key
+export KMS_INTERMEDIATE_KEY_ID=intermediate-key
+export LEAF_KEY_ID=leaf-key
+export VAULT_ADDR=https://vault.example.com:8200
+export VAULT_TOKEN=your-vault-token
+# Optional: Set namespace if using Vault Enterprise
+export VAULT_NAMESPACE=admin/your-namespace
 ```
+
+**Important Notes for HashiVault:**
+
+- Key IDs should be just the key name (e.g., `root-key`), not the full transit path (`transit/keys/root-key`)
+- The Sigstore library automatically constructs the full path internally
+- Use HTTPS for production Vault deployments
+- Set `VAULT_NAMESPACE` if your keys are in a specific Vault namespace
+- Ensure your Vault token has the following permissions:
+  - `read` capability on `transit/keys/<key-name>` (to fetch public keys)
+  - `update` capability on `transit/sign/<key-name>` (to perform signing operations)
 
 ### Example Certificate Outputs
 
@@ -311,13 +513,37 @@ Example with GCP KMS:
 Example with HashiCorp Vault KMS:
 
 ```bash
+# Set environment variables (recommended approach)
+export VAULT_ADDR=https://vault.example.com:8200
+export VAULT_TOKEN=your-vault-token
+# Optional: Set namespace if using Vault Enterprise
+export VAULT_NAMESPACE=admin/your-namespace
+
+# Run the certificate maker
 ./certificate-maker create "https://fulcio.example.com" \
   --kms-type hashivault \
-  --vault-address http://vault:8200 \
-  --vault-token token \
-  --root-key-id "transit/keys/root-key" \
-  --leaf-key-id "transit/keys/leaf-key" \
-  --intermediate-key-id "transit/keys/intermediate-key" \
+  --root-key-id "root-key" \
+  --leaf-key-id "leaf-key" \
+  --intermediate-key-id "intermediate-key" \
+  --root-cert root.pem \
+  --leaf-cert leaf.pem \
+  --intermediate-cert intermediate.pem \
+  --root-lifetime 87600h \
+  --intermediate-lifetime 43800h \
+  --leaf-lifetime 8760h
+```
+
+**Alternative with command-line flags:**
+
+```bash
+./certificate-maker create "https://fulcio.example.com" \
+  --kms-type hashivault \
+  --vault-address https://vault.example.com:8200 \
+  --vault-token your-vault-token \
+  --vault-namespace admin/your-namespace \
+  --root-key-id "root-key" \
+  --leaf-key-id "leaf-key" \
+  --intermediate-key-id "intermediate-key" \
   --root-cert root.pem \
   --leaf-cert leaf.pem \
   --intermediate-cert intermediate.pem \

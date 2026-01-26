@@ -37,7 +37,7 @@ import (
 	fulciogrpc "github.com/sigstore/fulcio/pkg/generated/protobuf"
 	"github.com/sigstore/fulcio/pkg/log"
 	"github.com/spiffe/go-spiffe/v2/spiffeid"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 const defaultOIDCDiscoveryTimeout = 10 * time.Second
@@ -49,6 +49,17 @@ const minimumHostnameLength = 2
 type verifierWithConfig struct {
 	*oidc.IDTokenVerifier
 	*oidc.Config
+}
+
+type bearerTokenTransport struct {
+	Transport http.RoundTripper
+	Token     string
+}
+
+func (t *bearerTokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req = req.Clone(req.Context())
+	req.Header.Set("Authorization", "Bearer "+t.Token)
+	return t.Transport.RoundTrip(req)
 }
 
 type FulcioConfig struct {
@@ -122,9 +133,14 @@ type OIDCIssuer struct {
 	// This is used to trust the TLS certificate signed by an internal CA when interacting
 	// with some OIDC providers, preventing x509 certificate verification failures.
 	CACert string `json:"CACert,omitempty" yaml:"ca-cert,omitempty"`
+
+	// SkipEmailVerification skips the email_verified claim check for email-type issuers.
+	// This should only be set to true for trusted internal identity providers (e.g., Microsoft Entra, ADFS)
+	// that perform email verification through their own processes but don't include the email_verified claim.
+	SkipEmailVerification bool `json:"SkipEmailVerification,omitempty" yaml:"skip-email-verification,omitempty"`
 }
 
-func metaRegex(issuer string) (*regexp.Regexp, error) {
+func MetaRegex(issuer string) (*regexp.Regexp, error) {
 	// Quote all of the "meta" characters like `.` to avoid
 	// those literal characters in the URL matching any character.
 	// This will ALSO quote `*`, so we replace the quoted version.
@@ -134,6 +150,12 @@ func metaRegex(issuer string) (*regexp.Regexp, error) {
 	// will match alpha-numeric parts with common additional
 	// "special" characters.
 	replaced := strings.ReplaceAll(quoted, regexp.QuoteMeta("*"), "[-_a-zA-Z0-9]+")
+
+	// Add anchors to the beginning and end of the regular expression
+	// to prevent matching URLs where the issuer is not the host of the URL,
+	// e.g. http://localhost:3000?https://meta-url-issuer.com/*
+	// Resolves GHSA-59jp-pj84-45mr
+	replaced = "^" + replaced + "$"
 
 	// Compile into a regular expression.
 	return regexp.Compile(replaced)
@@ -149,7 +171,7 @@ func (fc *FulcioConfig) GetIssuer(issuerURL string) (OIDCIssuer, bool) {
 	}
 
 	for meta, iss := range fc.MetaIssuers {
-		re, err := metaRegex(meta)
+		re, err := MetaRegex(meta)
 		if err != nil {
 			continue // Shouldn't happen, we check parsing the config
 		}
@@ -157,12 +179,13 @@ func (fc *FulcioConfig) GetIssuer(issuerURL string) (OIDCIssuer, bool) {
 			// If it matches, then return a concrete OIDCIssuer
 			// configuration for this issuer URL.
 			return OIDCIssuer{
-				IssuerURL:     issuerURL,
-				ClientID:      iss.ClientID,
-				Type:          iss.Type,
-				IssuerClaim:   iss.IssuerClaim,
-				SubjectDomain: iss.SubjectDomain,
-				CIProvider:    iss.CIProvider,
+				IssuerURL:             issuerURL,
+				ClientID:              iss.ClientID,
+				Type:                  iss.Type,
+				IssuerClaim:           iss.IssuerClaim,
+				SubjectDomain:         iss.SubjectDomain,
+				CIProvider:            iss.CIProvider,
+				SkipEmailVerification: iss.SkipEmailVerification,
 			}, true
 		}
 	}
@@ -205,26 +228,10 @@ func (fc *FulcioConfig) GetVerifier(issuerURL string, opts ...InsecureOIDCConfig
 	// If this issuer hasn't been recently used, or we have special config options, then create a new verifier
 	// and add it to the LRU cache.
 
-	var client *http.Client
-	if iss.CACert != "" {
-		rootCAs, _ := x509.SystemCertPool()
-		if rootCAs == nil {
-			rootCAs = x509.NewCertPool()
-		}
-		if ok := rootCAs.AppendCertsFromPEM([]byte(iss.CACert)); !ok {
-			log.Logger.Warnf("Failed to append custom CA cert for issuer URL %q", issuerURL)
-			return nil, false
-		}
-
-		transport := &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs:    rootCAs,
-				MinVersion: tls.VersionTLS12,
-			},
-		}
-		client = &http.Client{Transport: transport}
-	} else {
-		client = http.DefaultClient
+	client, err := httpClientForIssuer(fc, iss)
+	if err != nil {
+		log.Logger.Warnf("error building http client for issuer %q: %s", iss.IssuerURL, err)
+		return nil, false
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultOIDCDiscoveryTimeout)
@@ -232,7 +239,7 @@ func (fc *FulcioConfig) GetVerifier(issuerURL string, opts ...InsecureOIDCConfig
 
 	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, client), issuerURL)
 	if err != nil {
-		log.Logger.Warnf("Failed to create provider for issuer URL %q: %v", issuerURL, err)
+		log.Logger.Errorf("Failed to create provider for issuer URL %q: %v", issuerURL, err)
 		return nil, false
 	}
 
@@ -261,24 +268,26 @@ func (fc *FulcioConfig) ToIssuers() []*fulciogrpc.OIDCIssuer {
 
 	for _, cfgIss := range fc.OIDCIssuers {
 		issuer := &fulciogrpc.OIDCIssuer{
-			Issuer:            &fulciogrpc.OIDCIssuer_IssuerUrl{IssuerUrl: cfgIss.IssuerURL},
-			Audience:          cfgIss.ClientID,
-			SpiffeTrustDomain: cfgIss.SPIFFETrustDomain,
-			ChallengeClaim:    issuerToChallengeClaim(cfgIss.Type, cfgIss.ChallengeClaim),
-			IssuerType:        cfgIss.Type.String(),
-			SubjectDomain:     cfgIss.SubjectDomain,
+			Issuer:                &fulciogrpc.OIDCIssuer_IssuerUrl{IssuerUrl: cfgIss.IssuerURL},
+			Audience:              cfgIss.ClientID,
+			SpiffeTrustDomain:     cfgIss.SPIFFETrustDomain,
+			ChallengeClaim:        issuerToChallengeClaim(cfgIss.Type, cfgIss.ChallengeClaim),
+			IssuerType:            cfgIss.Type.String(),
+			SubjectDomain:         cfgIss.SubjectDomain,
+			SkipEmailVerification: cfgIss.SkipEmailVerification,
 		}
 		issuers = append(issuers, issuer)
 	}
 
 	for metaIss, cfgIss := range fc.MetaIssuers {
 		issuer := &fulciogrpc.OIDCIssuer{
-			Issuer:            &fulciogrpc.OIDCIssuer_WildcardIssuerUrl{WildcardIssuerUrl: metaIss},
-			Audience:          cfgIss.ClientID,
-			SpiffeTrustDomain: cfgIss.SPIFFETrustDomain,
-			ChallengeClaim:    issuerToChallengeClaim(cfgIss.Type, cfgIss.ChallengeClaim),
-			IssuerType:        cfgIss.Type.String(),
-			SubjectDomain:     cfgIss.SubjectDomain,
+			Issuer:                &fulciogrpc.OIDCIssuer_WildcardIssuerUrl{WildcardIssuerUrl: metaIss},
+			Audience:              cfgIss.ClientID,
+			SpiffeTrustDomain:     cfgIss.SPIFFETrustDomain,
+			ChallengeClaim:        issuerToChallengeClaim(cfgIss.Type, cfgIss.ChallengeClaim),
+			IssuerType:            cfgIss.Type.String(),
+			SubjectDomain:         cfgIss.SubjectDomain,
+			SkipEmailVerification: cfgIss.SkipEmailVerification,
 		}
 		issuers = append(issuers, issuer)
 	}
@@ -286,43 +295,67 @@ func (fc *FulcioConfig) ToIssuers() []*fulciogrpc.OIDCIssuer {
 	return issuers
 }
 
-func (fc *FulcioConfig) prepare() error {
-	if _, ok := fc.GetIssuer("https://kubernetes.default.svc"); ok {
-		// Add the Kubernetes cluster's CA to the system CA pool, and to
-		// the default transport.
+func httpClientForIssuer(fc *FulcioConfig, iss OIDCIssuer) (*http.Client, error) {
+	transportProvider := func(transport *http.Transport) http.RoundTripper {
+		return transport
+	}
+
+	_, hasK8SIssuer := fc.GetIssuer(k8sIssuerURL)
+	if iss.Type == IssuerTypeKubernetes && hasK8SIssuer {
+		// Add the Kubernetes cluster's CA to the client's CA pool
+		certs, err := os.ReadFile(k8sCA)
+		if err != nil {
+			return nil, fmt.Errorf("unable to read cluster CA file: %w", err)
+		}
+		iss.CACert = string(certs)
+
+		if _, err := os.Stat(k8sTokenFile); err == nil {
+			// add the authentication header
+			tokenBytes, err := os.ReadFile(k8sTokenFile)
+			if err != nil {
+				return nil, fmt.Errorf("unable to read cluster token file: %w", err)
+			}
+			transportProvider = func(transport *http.Transport) http.RoundTripper {
+				return &bearerTokenTransport{
+					Transport: transport,
+					Token:     string(tokenBytes),
+				}
+			}
+		} else {
+			if errors.Is(err, os.ErrNotExist) {
+				log.Logger.Warnf("Kubernetes token file can't be found on path: %s", k8sTokenFile)
+			} else {
+				return nil, err
+			}
+		}
+	}
+
+	if iss.CACert != "" {
 		rootCAs, _ := x509.SystemCertPool()
 		if rootCAs == nil {
 			rootCAs = x509.NewCertPool()
 		}
-		const k8sCA = "/var/run/fulcio/ca.crt"
-		certs, err := os.ReadFile(k8sCA)
-		if err != nil {
-			return fmt.Errorf("read file: %w", err)
-		}
-		if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
-			return fmt.Errorf("unable to append certs")
+		if ok := rootCAs.AppendCertsFromPEM([]byte(iss.CACert)); !ok {
+			return nil, fmt.Errorf("failed to append custom CA cert for issuer URL %q", iss.IssuerURL)
 		}
 
-		t := originalTransport.(*http.Transport).Clone()
-		t.TLSClientConfig.RootCAs = rootCAs
-		http.DefaultTransport = t
-	} else {
-		// If we parse a config that doesn't include a cluster issuer
-		// signed with the cluster'sCA, then restore the original transport
-		// (in case we overwrote it)
-		http.DefaultTransport = originalTransport
+		transport := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs:    rootCAs,
+				MinVersion: tls.VersionTLS12,
+			},
+		}
+		return &http.Client{Transport: transportProvider(transport)}, nil
 	}
+	return http.DefaultClient, nil
+}
 
+func (fc *FulcioConfig) prepare() error {
 	fc.verifiers = make(map[string][]*verifierWithConfig, len(fc.OIDCIssuers))
 	for _, iss := range fc.OIDCIssuers {
-		ctx, cancel := context.WithTimeout(context.Background(), defaultOIDCDiscoveryTimeout)
-		defer cancel()
-		provider, err := oidc.NewProvider(ctx, iss.IssuerURL)
-		if err != nil {
+		if err := fc.insertVerifier(iss); err != nil {
 			log.Logger.Errorf("error creating provider for issuer URL %q: %v", iss.IssuerURL, err)
-		} else {
-			cfg := &oidc.Config{ClientID: iss.ClientID}
-			fc.verifiers[iss.IssuerURL] = []*verifierWithConfig{{provider.Verifier(cfg), cfg}}
+			continue
 		}
 	}
 
@@ -331,6 +364,34 @@ func (fc *FulcioConfig) prepare() error {
 		return fmt.Errorf("lru: %w", err)
 	}
 	fc.lru = cache
+	return nil
+}
+
+var (
+	k8sCA = "/var/run/fulcio/ca.crt"
+	// k8sTokenFile specifies the standard path where Kubernetes automatically
+	// mounts the projected service account token for a pod.
+	// This path is publicly known and not a sensitive credential itself,
+	// hence the Gosec G101 warning is a false positive and is suppressed.
+	// #nosec G101
+	k8sTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	k8sIssuerURL = "https://kubernetes.default.svc"
+)
+
+func (fc *FulcioConfig) insertVerifier(iss OIDCIssuer) error {
+	client, err := httpClientForIssuer(fc, iss)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultOIDCDiscoveryTimeout)
+	defer cancel()
+	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, client), iss.IssuerURL)
+	if err != nil {
+		return err
+	}
+	cfg := &oidc.Config{ClientID: iss.ClientID}
+	fc.verifiers[iss.IssuerURL] = []*verifierWithConfig{{provider.Verifier(cfg), cfg}}
 	return nil
 }
 
@@ -497,8 +558,6 @@ var DefaultConfig = &FulcioConfig{
 	},
 }
 
-var originalTransport = http.DefaultTransport
-
 type configKey struct{}
 
 func With(ctx context.Context, cfg *FulcioConfig) context.Context {
@@ -517,7 +576,6 @@ func FromContext(ctx context.Context) *FulcioConfig {
 // It checks that the templates defined are parseable
 // We should check it during the service bootstrap to avoid errors further
 func validateCIIssuerMetadata(fulcioConfig *FulcioConfig) error {
-
 	checkParse := func(temp string) error {
 		t := template.New("").Option("missingkey=error")
 		_, err := t.Parse(temp)
