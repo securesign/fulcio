@@ -6,20 +6,20 @@ metadata:
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "release-1.3"
     # pipelinesascode.tekton.dev/task: "[.tekton/fulcio-unit-test.yaml]"
     build.appstudio.openshift.io/build-nudge-files: "controllers/constants/*"
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: tas-components
-    appstudio.openshift.io/component: fulcio-server
+    appstudio.openshift.io/application: tas-components-v1-3
+    appstudio.openshift.io/component: fulcio-server-v1-3
     pipelines.appstudio.openshift.io/type: build
-  name: fulcio-server-on-push
+  name: fulcio-server-v1-3-on-push
   namespace: rhtas-tenant
 spec:
   params:
   - name: release-version
-    value: "1.4.0"
+    value: "1.3.2"
   - name: dockerfile
     value: Dockerfile.fulcio-server.rh
   - name: git-url
@@ -38,15 +38,12 @@ spec:
     value: [{"path": ".", "type": "gomod"}, {"path": "./hack/tools", "type": "gomod"}]
   - name: go_unit_test
     value: true
-  - name: fips-check
-    value: "true"
   taskRunSpecs:
-  - pipelineTaskName: run-unit-test
-    stepSpecs:
-    - computeResources:
-        limits:
-          memory: 4Gi
-      name: run-tests
+    - pipelineTaskName: run-unit-test
+      serviceAccountName: build-pipeline-fulcio-server-v1-3
+      podTemplate:
+        imagePullSecrets:
+        - name: brew-registry-pull-secret
   pipelineRef:
     resolver: git
     params:
@@ -57,7 +54,7 @@ spec:
       - name: pathInRepo
         value: 'pipelines/docker-build-oci-ta.yaml'
   taskRunTemplate:
-    serviceAccountName: build-pipeline-fulcio-server
+    serviceAccountName: build-pipeline-fulcio-server-v1-3
   workspaces:
   - name: git-auth
     secret:
