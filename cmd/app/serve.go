@@ -487,11 +487,10 @@ func StartDuplexServer(ctx context.Context, cfg *config.FulcioConfig, ctClient *
 		return fmt.Errorf("registering legacy grpc ca handler: %w", err)
 	}
 
-	// Prometheus
-	reg := prometheus.NewRegistry()
-	grpcMetrics := grpc_prometheus.DefaultServerMetrics
-	grpcMetrics.EnableHandlingTimeHistogram()
-	reg.MustRegister(grpcMetrics, server.MetricLatency, server.RequestsCount)
+	// Prometheus - serve metrics ourselves using the default registry
+	// Note: We avoid using d.RegisterListenAndServeMetrics() because go-grpc-kit
+	// tries to register metrics with the same names as grpc_prometheus, causing conflicts.
+	enableHandlingTimeHistogram()
 	grpc_prometheus.Register(d.Server)
 
 	// Healthz
@@ -500,8 +499,19 @@ func StartDuplexServer(ctx context.Context, cfg *config.FulcioConfig, ctClient *
 		return fmt.Errorf("registering healthz endpoint: %w", err)
 	}
 
-	// Register prometheus handle.
-	d.RegisterListenAndServeMetrics(metricsPort, false)
+	// Serve prometheus metrics on the metrics port
+	go func() {
+		mux := http.NewServeMux()
+		mux.Handle("/metrics", promhttp.Handler())
+		metricsServer := &http.Server{
+			Addr:              fmt.Sprintf(":%d", metricsPort),
+			Handler:           mux,
+			ReadHeaderTimeout: 60 * time.Second,
+		}
+		if err := metricsServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Error("metrics server error", zap.Error(err))
+		}
+	}()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", host, port))
 	if err != nil {

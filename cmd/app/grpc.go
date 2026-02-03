@@ -54,6 +54,16 @@ const (
 	LegacyUnixDomainSocket = "@fulcio-legacy-grpc-socket"
 )
 
+// enableHistogramOnce ensures grpc_prometheus histogram metrics are only registered once
+// to avoid "descriptor already exists" panics when multiple servers are created.
+var enableHistogramOnce sync.Once
+
+func enableHandlingTimeHistogram() {
+	enableHistogramOnce.Do(func() {
+		grpc_prometheus.DefaultServerMetrics.EnableHandlingTimeHistogram()
+	})
+}
+
 type grpcServer struct {
 	*grpc.Server
 	grpcServerEndpoint string
@@ -200,7 +210,7 @@ func createGRPCServer(cfg *config.FulcioConfig, ctClient *ctclient.LogClient, ba
 
 func (g *grpcServer) setupPrometheus(reg *prometheus.Registry) {
 	grpcMetrics := grpc_prometheus.DefaultServerMetrics
-	grpcMetrics.EnableHandlingTimeHistogram()
+	enableHandlingTimeHistogram()
 	reg.MustRegister(grpcMetrics, server.MetricLatency, server.RequestsCount)
 	grpc_prometheus.Register(g.Server)
 }

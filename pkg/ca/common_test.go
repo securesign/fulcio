@@ -127,7 +127,8 @@ func TestVerifyCertChain(t *testing.T) {
 	// Failure: Weak key
 	weakSubCert, weakSubKey, _ := test.GenerateWeakSubordinateCA(rootCert, rootKey)
 	err = VerifyCertChain([]*x509.Certificate{weakSubCert, rootCert}, weakSubKey)
-	if err == nil || !strings.Contains(err.Error(), "ECDSA curve P-224 not allowed") {
+	// Error message varies by Go version: "ECDSA curve P-224 not allowed" or "P224...is not supported"
+	if err == nil || (!strings.Contains(err.Error(), "P-224") && !strings.Contains(err.Error(), "P224")) {
 		t.Fatalf("expected error verifying weak cert chain: %v", err)
 	}
 
