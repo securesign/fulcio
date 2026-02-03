@@ -220,3 +220,5 @@ jobs:
       - name: Collect diagnostics and upload
         if: ${{ failure() }}
         uses: chainguard-dev/actions/kind-diag@ce51233d303aed2394a9976e7f5642fd2158f693 # v1.1.1
+        with:
+          artifact-name: logs-${{ matrix.issuer == 'OIDC Issuer' && 'oidc' || 'meta' }}

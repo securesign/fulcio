@@ -50,9 +50,15 @@ linters:
           - staticcheck
         path: pkg/ca/tinkca/signer.go
         text: SA1019
+      - linters:
+          - staticcheck
+        text: 'SA1019: cryptoutils\.ValidatePubKey'
+      - linters:
+          - revive
+        path: pkg/api/
+        text: 'var-naming'
     paths:
       - third_party$
-      - builtin$
       - examples$
 issues:
   max-issues-per-linter: 0
@@ -66,5 +72,4 @@ formatters:
     generated: lax
     paths:
       - third_party$
-      - builtin$
       - examples$
