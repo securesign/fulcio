@@ -29,7 +29,7 @@ RUN go mod download && \
     go build -mod=readonly -o server main.go
 
 # Multi-Stage production build
-FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:3aea404f9e7a55d36d93c15af9bc0e4965b871ef63c3bbd4a0746bffdf5203eb as deploy
+FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:6d839c6ab8ecc05793b3c618655421e5bbe60af7e5aca8168d8d126d06d9c326 as deploy
 
 LABEL description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
 LABEL io.k8s.description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
