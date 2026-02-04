@@ -4,7 +4,7 @@ go 1.25.1
 
 require (
 	chainguard.dev/go-grpc-kit v0.17.15
-	chainguard.dev/sdk v0.1.49
+	chainguard.dev/sdk v0.1.50
 	cloud.google.com/go/security v1.19.2
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/ThalesGroup/crypto11 v1.6.0
@@ -40,8 +40,8 @@ require (
 	go.step.sm/crypto v0.76.0
 	go.uber.org/zap v1.27.0
 	goa.design/goa/v3 v3.21.1
-	google.golang.org/api v0.264.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260202165425-ce8ad4cf556b
+	google.golang.org/api v0.265.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20260203192932-546029d2fa20
 	google.golang.org/grpc v1.78.0
 	google.golang.org/protobuf v1.36.11
 	gopkg.in/yaml.v3 v3.0.1
@@ -162,6 +162,6 @@ require (
 	golang.org/x/term v0.39.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	google.golang.org/genproto v0.0.0-20260202165425-ce8ad4cf556b // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260202165425-ce8ad4cf556b // indirect
+	google.golang.org/genproto v0.0.0-20260203192932-546029d2fa20 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260203192932-546029d2fa20 // indirect
 )
