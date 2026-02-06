@@ -8,7 +8,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main"
     # pipelinesascode.tekton.dev/task: "[.tekton/fulcio-unit-test.yaml]"
-    build.appstudio.openshift.io/build-nudge-files: "controllers/constants/*, .*.yml"
+    build.appstudio.openshift.io/build-nudge-files: "secure-sign-operator/config/default/*.env, .*.yml"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: tas-components
