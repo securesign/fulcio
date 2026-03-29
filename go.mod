@@ -8,7 +8,7 @@ require (
 	cloud.google.com/go/security v1.19.2
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/ThalesGroup/crypto11 v1.6.0
-	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
+	github.com/asaskevich/govalidator e11347878e23
 	github.com/coreos/go-oidc/v3 v3.17.0
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/go-jose/go-jose/v4 v4.1.3
@@ -24,11 +24,11 @@ require (
 	github.com/prometheus/common v0.67.5
 	github.com/rs/cors v1.11.1
 	github.com/sigstore/protobuf-specs v0.5.0
-	github.com/sigstore/sigstore v1.10.4
-	github.com/sigstore/sigstore/pkg/signature/kms/aws v1.10.4
-	github.com/sigstore/sigstore/pkg/signature/kms/azure v1.10.4
-	github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.10.4
-	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.10.4
+	github.com/sigstore/sigstore v1.10.5
+	github.com/sigstore/sigstore/pkg/signature/kms/aws v1.10.5
+	github.com/sigstore/sigstore/pkg/signature/kms/azure v1.10.5
+	github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.10.5
+	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.10.5
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -41,8 +41,8 @@ require (
 	go.uber.org/zap v1.27.1
 	go.yaml.in/yaml/v3 v3.0.4
 	goa.design/goa/v3 v3.23.4
-	google.golang.org/api v0.272.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20260311181403-84a4fc48630c
+	google.golang.org/api v0.273.0
+	google.golang.org/genproto/googleapis/api d00831a3d3e7
 	google.golang.org/grpc v1.79.3
 	google.golang.org/protobuf v1.36.11
 	sigs.k8s.io/release-utils v0.12.3
@@ -53,7 +53,7 @@ require (
 	cloud.google.com/go/auth v0.19.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/compute/metadata v0.9.0 // indirect
-	cloud.google.com/go/iam v1.5.3 // indirect
+	cloud.google.com/go/iam v1.6.0 // indirect
 	cloud.google.com/go/kms v1.26.0 // indirect
 	cloud.google.com/go/longrunning v0.8.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
@@ -71,15 +71,15 @@ require (
 	github.com/aws/aws-sdk-go v1.55.7 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.41.4 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.32.12 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.19.12 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.20 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.20 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.19.13 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.21 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.4.21 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.7.20 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.20 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.13.21 // indirect
 	github.com/aws/aws-sdk-go-v2/service/kms v1.50.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.0.8 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.0.9 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.30.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.35.17 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.9 // indirect
@@ -164,7 +164,7 @@ require (
 	golang.org/x/term v0.41.0 // indirect
 	golang.org/x/text v0.35.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	google.golang.org/genproto v0.0.0-20260226221140-a57be14db171 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260311181403-84a4fc48630c // indirect
+	google.golang.org/genproto d00831a3d3e7 // indirect
+	google.golang.org/genproto/googleapis/rpc d00831a3d3e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
