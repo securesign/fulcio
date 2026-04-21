@@ -7,12 +7,12 @@ metadata:
     build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "release-1.4"
     # pipelinesascode.tekton.dev/task: "[.tekton/fulcio-unit-test.yaml]"
   creationTimestamp: null
   labels:
-    appstudio.openshift.io/application: tas-components
-    appstudio.openshift.io/component: fulcio-server
+    appstudio.openshift.io/application: tas-components-v1-4
+    appstudio.openshift.io/component: fulcio-server-v1-4
     pipelines.appstudio.openshift.io/type: build
   name: fulcio-server-on-pull-request
   namespace: rhtas-tenant
@@ -59,7 +59,7 @@ spec:
       - name: pathInRepo
         value: 'pipelines/docker-build-oci-ta.yaml'
   taskRunTemplate:
-    serviceAccountName: build-pipeline-fulcio-server
+    serviceAccountName: build-pipeline-fulcio-server-v1-4
   workspaces:
   - name: git-auth
     secret:
