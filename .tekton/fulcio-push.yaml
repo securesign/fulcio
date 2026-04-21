@@ -19,7 +19,7 @@ metadata:
 spec:
   params:
   - name: release-version
-    value: "1.4.0"
+    value: "1.4.1"
   - name: dockerfile
     value: Dockerfile.fulcio-server.rh
   - name: git-url
