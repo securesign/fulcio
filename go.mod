@@ -1,6 +1,6 @@
 module github.com/sigstore/fulcio
 
-go 1.26.0
+go 1.25.9
 
 require (
 	chainguard.dev/go-grpc-kit v0.17.17
@@ -121,7 +121,7 @@ require (
 	github.com/jmespath/go-jmespath v0.4.1-0.20220621161143-b0104c826a24 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/letsencrypt/boulder v0.20260428.0 // indirect
+	github.com/letsencrypt/boulder v0.20260420.0 // indirect
 	github.com/miekg/pkcs11 v1.1.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
