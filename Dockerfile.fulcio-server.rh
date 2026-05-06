@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM registry.redhat.io/ubi9/go-toolset:9.7-1777898790@sha256:8507af9b53fbf94e81758afaedd2fe4c76fcc3722b57d1740d44cfc8e6552bad AS builder
+FROM registry.redhat.io/ubi9/go-toolset:9.7-1778054913@sha256:b282d5a2abe049e78053c5c629c321c75d0e0faa181edcfb24aa6699b2429868 AS builder
 
 ENV GOEXPERIMENT=strictfipsruntime
 ENV CGO_ENABLED=1
