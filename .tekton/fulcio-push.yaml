@@ -14,7 +14,7 @@ metadata:
     appstudio.openshift.io/application: tas-components-v1-4
     appstudio.openshift.io/component: fulcio-server-v1-4
     pipelines.appstudio.openshift.io/type: build
-  name: fulcio-server-on-push
+  name: fulcio-server-v1-4-on-push
   namespace: rhtas-tenant
 spec:
   params:
