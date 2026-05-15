@@ -19,8 +19,8 @@ import (
 	"context"
 	"log"
 
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"github.com/grpc-ecosystem/go-grpc-middleware/logging/zap/ctxzap"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/v2/logging/zap"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/logging/zap/ctxzap"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"goa.design/goa/v3/grpc/middleware"
