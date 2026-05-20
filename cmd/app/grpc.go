@@ -30,9 +30,9 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	ctclient "github.com/google/certificate-transparency-go/client"
-	grpcmw "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpcmw "github.com/grpc-ecosystem/go-grpc-middleware/v2"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/v2/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/v2/recovery"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/sigstore/fulcio/pkg/ca"
