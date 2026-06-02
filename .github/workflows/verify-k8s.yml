@@ -37,6 +37,12 @@ jobs:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
 
+      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
+        run: |
+          go mod edit -dropgodebug=fips140
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git update-index --assume-unchanged go.mod
+
       - name: Install kubeconform
         run: go install github.com/yannh/kubeconform/cmd/kubeconform@e65429b1e5990dd019ebb7b5642dcd22a3e9cd13 # v0.7.0
 
@@ -80,6 +86,12 @@ jobs:
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
+
+      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
+        run: |
+          go mod edit -dropgodebug=fips140
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git update-index --assume-unchanged go.mod
 
       - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
