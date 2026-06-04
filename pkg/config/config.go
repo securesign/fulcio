@@ -17,6 +17,7 @@ package config
 
 import (
 	"context"
+	"crypto/fips140"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -237,7 +238,17 @@ func (fc *FulcioConfig) GetVerifier(issuerURL string, opts ...InsecureOIDCConfig
 	ctx, cancel := context.WithTimeout(context.Background(), defaultOIDCDiscoveryTimeout)
 	defer cancel()
 
-	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, client), issuerURL)
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
+	// go-jose unconditionally computes SHA-1 x5t thumbprints during JWKS parsing,
+	// which panics in FIPS 140-only mode. SHA-1 is used here only as a non-cryptographic
+	// key identifier, not for security. Remove once go-jose merges FIPS support:
+	// https://github.com/go-jose/go-jose/pull/219
+	var provider *oidc.Provider
+	fips140.WithoutEnforcement(func() {
+		provider, err = oidc.NewProvider(oidc.ClientContext(ctx, client), issuerURL)
+	})
+	// ========================================
 	if err != nil {
 		log.Logger.Errorf("Failed to create provider for issuer URL %q: %v", issuerURL, err)
 		return nil, false
@@ -386,7 +397,17 @@ func (fc *FulcioConfig) insertVerifier(iss OIDCIssuer) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), defaultOIDCDiscoveryTimeout)
 	defer cancel()
-	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, client), iss.IssuerURL)
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
+	// go-jose unconditionally computes SHA-1 x5t thumbprints during JWKS parsing,
+	// which panics in FIPS 140-only mode. SHA-1 is used here only as a non-cryptographic
+	// key identifier, not for security. Remove once go-jose merges FIPS support:
+	// https://github.com/go-jose/go-jose/pull/219
+	var provider *oidc.Provider
+	fips140.WithoutEnforcement(func() {
+		provider, err = oidc.NewProvider(oidc.ClientContext(ctx, client), iss.IssuerURL)
+	})
+	// ========================================
 	if err != nil {
 		return err
 	}

@@ -18,6 +18,7 @@ package server
 import (
 	"context"
 	"crypto"
+	"crypto/fips140"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
@@ -332,6 +333,12 @@ func getHashFuncForSignatureAlgorithm(signatureAlgorithm x509.SignatureAlgorithm
 	case x509.SHA512WithRSA:
 		return crypto.SHA512, nil
 	case x509.PureEd25519:
+		// RHTAS FIPS - DO NOT REMOVE
+		// ========================================
+		if fips140.Enabled() {
+			return crypto.Hash(0), fmt.Errorf("Ed25519 is not supported in FIPS mode")
+		}
+		// ========================================
 		return crypto.Hash(0), nil
 	}
 	return crypto.Hash(0), fmt.Errorf("unrecognized signature algorithm: %s", signatureAlgorithm)
