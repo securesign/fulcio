@@ -33,9 +33,9 @@ jobs:
     steps:
       - name: Check Signature
         run: |
-          cosign verify ghcr.io/gythialy/golang-cross:v1.25.5-0@sha256:3a7d463d9e3438513b6bd597c79f7d5db756023e04718259cc25aabd5d00fc17 \
+          cosign verify ghcr.io/gythialy/golang-cross:v1.26.3-0@sha256:9f7a53d7205e2f1f2742d624ff0b6e1531e8c22863dfb24ca966be5efbdee48b \
           --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-          --certificate-identity "https://github.com/gythialy/golang-cross/.github/workflows/release-golang-cross.yml@refs/tags/v1.25.5-0"
+          --certificate-identity "https://github.com/gythialy/golang-cross/.github/workflows/release-golang-cross.yml@refs/tags/v1.26.3-0"
         env:
           TUF_ROOT: /tmp
 
@@ -44,12 +44,18 @@ jobs:
     needs:
       - check-signature
     container:
-      image: ghcr.io/gythialy/golang-cross:v1.25.5-0@sha256:3a7d463d9e3438513b6bd597c79f7d5db756023e04718259cc25aabd5d00fc17
+      image: ghcr.io/gythialy/golang-cross:v1.26.3-0@sha256:9f7a53d7205e2f1f2742d624ff0b6e1531e8c22863dfb24ca966be5efbdee48b
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
           persist-credentials: false
+
+      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
+        run: |
+          go mod edit -dropgodebug=fips140
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git update-index --assume-unchanged go.mod
 
       # Error: fatal: detected dubious ownership in repository at '/__w/fulcio/fulcio'
       #      To add an exception for this directory, call:

@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM registry.redhat.io/ubi9/go-toolset:9.7-1774618347@sha256:a05a1c82b3ce23864a831084ff21a907128f4707ca3f455ba99717c0c2c4d6c1 AS builder
+FROM registry.redhat.io/ubi9/go-toolset:9.8@sha256:355b23fe885cf565c9313a7e98db742df0aec21456244e808942c56489594251 AS builder
 
-ENV GOEXPERIMENT=strictfipsruntime
 ENV CGO_ENABLED=1
 ENV APP_ROOT=/opt/app-root
 ENV GOPATH=$APP_ROOT
+ENV GOFIPS140=v1.0.0
 
 WORKDIR $APP_ROOT/src/
 ADD go.mod go.sum $APP_ROOT/src/
@@ -26,7 +26,7 @@ ADD go.mod go.sum $APP_ROOT/src/
 ADD ./ $APP_ROOT/src/
 
 RUN go mod download && \
-    go build -mod=readonly -o server main.go
+    go build -mod=readonly -tags=no_openssl -o server main.go
 
 # Multi-Stage production build
 FROM registry.access.redhat.com/ubi9-minimal@sha256:383329bf9c4f968e87e85d30ba3a5cb988a3bbde28b8e4932dcd3a025fd9c98c as deploy

@@ -41,6 +41,12 @@ jobs:
           go-version: ${{ env.GOVERSION }}
           check-latest: true
 
+      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
+        run: |
+          go mod edit -dropgodebug=fips140
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git update-index --assume-unchanged go.mod
+
       - uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b # v3.0.0
         name: Install protobuf
         with:

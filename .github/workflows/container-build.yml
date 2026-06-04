@@ -47,6 +47,12 @@ jobs:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
 
+      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
+        run: |
+          go mod edit -dropgodebug=fips140
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git update-index --assume-unchanged go.mod
+
       - name: deps
         run: sudo apt-get update && sudo apt-get install -yq libpcsclite-dev
 

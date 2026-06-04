@@ -36,7 +36,11 @@ jobs:
 
       - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
-      - uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
+        run: |
+          go mod edit -dropgodebug=fips140
 
       - name: Start Fulcio services
         run: |
@@ -53,7 +57,8 @@ jobs:
             --out=signing-config.json
 
       - name: Get test OIDC token
-        uses: sigstore-conformance/extremely-dangerous-public-oidc-beacon@main
+        run: |
+          curl -o oidc-token.txt "https://storage.googleapis.com/sigstore-conformance-testing-token/untrusted-testing-token.txt"
 
       - name: Sign and verify with ID token
         run: |
@@ -68,6 +73,6 @@ jobs:
           cosign verify-blob myblob \
             --insecure-ignore-tlog \
             --trusted-root=trusted-root.json \
-            --certificate-identity=https://github.com/sigstore-conformance/extremely-dangerous-public-oidc-beacon/.github/workflows/extremely-dangerous-oidc-beacon.yml@refs/heads/main \
-            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity=untrusted-sa@sigstore-conformance.iam.gserviceaccount.com \
+            --certificate-oidc-issuer=https://accounts.google.com \
             --bundle=bundle.json

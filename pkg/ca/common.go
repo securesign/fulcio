@@ -18,7 +18,10 @@ package ca
 import (
 	"context"
 	"crypto"
+	"crypto/fips140"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/asn1"
 	"errors"
 	"time"
 
@@ -33,10 +36,18 @@ func MakeX509(ctx context.Context, principal identity.Principal, publicKey crypt
 		return nil, err
 	}
 
-	skid, err := cryptoutils.SKID(publicKey)
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
+	var skid []byte
+	if fips140.Enabled() {
+		skid, err = computeSKID(publicKey)
+	} else {
+		skid, err = cryptoutils.SKID(publicKey)
+	}
 	if err != nil {
 		return nil, err
 	}
+	// ========================================
 
 	cert := &x509.Certificate{
 		SerialNumber: serialNumber,
@@ -106,3 +117,26 @@ func VerifyCertChain(certs []*x509.Certificate, signer crypto.Signer) error {
 
 	return goodkey.ValidatePubKey(signer.Public())
 }
+
+// RHTAS FIPS - DO NOT REMOVE
+// ========================================
+type subjectPublicKeyInfo struct {
+	Algorithm        asn1.RawValue
+	SubjectPublicKey asn1.BitString
+}
+
+// computeSKID computes a Subject Key Identifier using SHA-256 (truncated to 20 bytes).
+func computeSKID(pub crypto.PublicKey) ([]byte, error) {
+	der, err := x509.MarshalPKIXPublicKey(pub)
+	if err != nil {
+		return nil, err
+	}
+	var spki subjectPublicKeyInfo
+	if _, err := asn1.Unmarshal(der, &spki); err != nil {
+		return nil, err
+	}
+	hash := sha256.Sum256(spki.SubjectPublicKey.Bytes)
+	return hash[:20], nil
+}
+
+// ========================================
