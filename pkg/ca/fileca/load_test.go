@@ -17,6 +17,7 @@ package fileca
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -40,6 +41,49 @@ func TestValidLoadKeyPair(t *testing.T) {
 		}
 	}
 }
+
+// RHTAS FIPS - DO NOT REMOVE
+// ========================================
+func TestValidLoadKeyPairNoPassword(t *testing.T) {
+	keypairs := []string{
+		"ecdsa-pkcs8",
+		"ed25519-pkcs8",
+		"rsa4096-pkcs8",
+	}
+
+	for _, keypair := range keypairs {
+		keyPath := fmt.Sprintf("testdata/%s-key.pem", keypair)
+		certPath := fmt.Sprintf("testdata/%s-cert.pem", keypair)
+
+		_, err := loadKeyPair(certPath, keyPath, "")
+		if err != nil {
+			t.Errorf("Failed to load unencrypted key pair of type %s: %v", keypair, err)
+		}
+	}
+}
+
+func TestEncryptedKeyWithoutPassword(t *testing.T) {
+	keypairs := []struct {
+		name string
+		key  string
+		cert string
+	}{
+		{"PKCS#8 encrypted", "testdata/ed25519-key.pem", "testdata/ed25519-cert.pem"},
+		{"RFC 1423 encrypted", "testdata/ecdsa-key.pem", "testdata/ecdsa-cert.pem"},
+	}
+
+	for _, kp := range keypairs {
+		_, err := loadKeyPair(kp.cert, kp.key, "")
+		if err == nil {
+			t.Errorf("%s: expected error when loading encrypted key without password", kp.name)
+		}
+		if err != nil && !strings.Contains(err.Error(), "encrypted") {
+			t.Errorf("%s: expected error mentioning encryption, got: %v", kp.name, err)
+		}
+	}
+}
+
+// ========================================
 
 func TestInvalidLoadKeyPair(t *testing.T) {
 	keypairs := []string{

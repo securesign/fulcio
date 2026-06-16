@@ -18,8 +18,14 @@ package fileca
 import (
 	"bytes"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/fips140"
+	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -44,7 +50,12 @@ func loadKeyPair(certPath, keyPath, keyPass string) (*ca.SignerCertsMutex, error
 		return nil, err
 	}
 
-	{
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
+	if keyPass != "" {
+		if fips140.Enabled() {
+			return nil, fmt.Errorf("fileca: encrypted private keys are not supported in FIPS mode, use an unencrypted key")
+		}
 		opaqueKey, err := pemutil.Read(keyPath, pemutil.WithPassword([]byte(keyPass)))
 		if err != nil {
 			return nil, err
@@ -55,7 +66,13 @@ func loadKeyPair(certPath, keyPath, keyPass string) (*ca.SignerCertsMutex, error
 		if !ok {
 			return nil, errors.New(`fileca: loaded private key can't be used to sign`)
 		}
+	} else {
+		key, err = loadUnencryptedKey(keyPath)
+		if err != nil {
+			return nil, err
+		}
 	}
+	// ========================================
 
 	if err := ca.VerifyCertChain(certs, key); err != nil {
 		return nil, err
@@ -63,3 +80,62 @@ func loadKeyPair(certPath, keyPath, keyPass string) (*ca.SignerCertsMutex, error
 
 	return &ca.SignerCertsMutex{Certs: certs, Signer: key}, nil
 }
+
+// RHTAS FIPS - DO NOT REMOVE
+// ========================================
+func loadUnencryptedKey(keyPath string) (crypto.Signer, error) {
+	data, err := os.ReadFile(filepath.Clean(keyPath))
+	if err != nil {
+		return nil, err
+	}
+
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return nil, errors.New("fileca: failed to decode PEM block from private key file")
+	}
+
+	if block.Type == "ENCRYPTED PRIVATE KEY" || block.Headers["Proc-Type"] == "4,ENCRYPTED" {
+		return nil, errors.New("fileca: private key is encrypted, provide a password with --fileca-key-passwd")
+	}
+
+	var key crypto.Signer
+	switch block.Type {
+	case "PRIVATE KEY":
+		parsed, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+		switch k := parsed.(type) {
+		case *ecdsa.PrivateKey:
+			key = k
+		case *rsa.PrivateKey:
+			key = k
+		case ed25519.PrivateKey:
+			// RHTAS FIPS - DO NOT REMOVE
+			// ========================================
+			if fips140.Enabled() {
+				return nil, fmt.Errorf("fileca: Ed25519 keys are not supported in FIPS mode")
+			}
+			// ========================================
+			key = k
+		default:
+			return nil, errors.New("fileca: unsupported key type in PKCS#8 container")
+		}
+	case "EC PRIVATE KEY":
+		key, err = x509.ParseECPrivateKey(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+	case "RSA PRIVATE KEY":
+		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.New("fileca: unsupported PEM block type: " + block.Type)
+	}
+
+	return key, nil
+}
+
+// ========================================
