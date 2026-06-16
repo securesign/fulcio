@@ -42,6 +42,8 @@ func TestValidLoadKeyPair(t *testing.T) {
 	}
 }
 
+// RHTAS FIPS - DO NOT REMOVE
+// ========================================
 func TestValidLoadKeyPairNoPassword(t *testing.T) {
 	keypairs := []string{
 		"ecdsa-pkcs8",
@@ -80,6 +82,8 @@ func TestEncryptedKeyWithoutPassword(t *testing.T) {
 		}
 	}
 }
+
+// ========================================
 
 func TestInvalidLoadKeyPair(t *testing.T) {
 	keypairs := []string{

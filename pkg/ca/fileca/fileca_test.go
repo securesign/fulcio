@@ -35,6 +35,8 @@ func TestNewFileCA(t *testing.T) {
 	}
 }
 
+// RHTAS FIPS - DO NOT REMOVE
+// ========================================
 func TestNewFileCANoPassword(t *testing.T) {
 	_, err := NewFileCA(
 		`testdata/ed25519-pkcs8-cert.pem`,
@@ -46,6 +48,8 @@ func TestNewFileCANoPassword(t *testing.T) {
 		t.Error(`Failed to load file CA with unencrypted key`)
 	}
 }
+
+// ========================================
 
 func TestCertUpdate(t *testing.T) {
 	oldCert := `testdata/ed25519-cert.pem`

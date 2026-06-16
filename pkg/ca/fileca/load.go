@@ -20,10 +20,12 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/fips140"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -48,7 +50,12 @@ func loadKeyPair(certPath, keyPath, keyPass string) (*ca.SignerCertsMutex, error
 		return nil, err
 	}
 
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
 	if keyPass != "" {
+		if fips140.Enabled() {
+			return nil, fmt.Errorf("fileca: encrypted private keys are not supported in FIPS mode, use an unencrypted key")
+		}
 		opaqueKey, err := pemutil.Read(keyPath, pemutil.WithPassword([]byte(keyPass)))
 		if err != nil {
 			return nil, err
@@ -65,6 +72,7 @@ func loadKeyPair(certPath, keyPath, keyPass string) (*ca.SignerCertsMutex, error
 			return nil, err
 		}
 	}
+	// ========================================
 
 	if err := ca.VerifyCertChain(certs, key); err != nil {
 		return nil, err
@@ -73,6 +81,8 @@ func loadKeyPair(certPath, keyPath, keyPass string) (*ca.SignerCertsMutex, error
 	return &ca.SignerCertsMutex{Certs: certs, Signer: key}, nil
 }
 
+// RHTAS FIPS - DO NOT REMOVE
+// ========================================
 func loadUnencryptedKey(keyPath string) (crypto.Signer, error) {
 	data, err := os.ReadFile(filepath.Clean(keyPath))
 	if err != nil {
@@ -101,6 +111,12 @@ func loadUnencryptedKey(keyPath string) (crypto.Signer, error) {
 		case *rsa.PrivateKey:
 			key = k
 		case ed25519.PrivateKey:
+			// RHTAS FIPS - DO NOT REMOVE
+			// ========================================
+			if fips140.Enabled() {
+				return nil, fmt.Errorf("fileca: Ed25519 keys are not supported in FIPS mode")
+			}
+			// ========================================
 			key = k
 		default:
 			return nil, errors.New("fileca: unsupported key type in PKCS#8 container")
@@ -121,3 +137,5 @@ func loadUnencryptedKey(keyPath string) (crypto.Signer, error) {
 
 	return key, nil
 }
+
+// ========================================

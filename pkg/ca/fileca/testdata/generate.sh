@@ -390,6 +390,8 @@ EOF
     rm password.file
 }
 
+# RHTAS FIPS - DO NOT REMOVE
+# ========================================
 function generate_ecdsa_pkcs8 {
     openssl ecparam -genkey -name secp384r1 2>/dev/null | \
         openssl pkcs8 -topk8 -nocrypt -out ecdsa-pkcs8-key.pem 2>/dev/null
@@ -444,3 +446,4 @@ generate_eku_chaining_violation
 generate_ecdsa_pkcs8
 generate_ed25519_pkcs8
 generate_rsa4096_pkcs8
+# ========================================

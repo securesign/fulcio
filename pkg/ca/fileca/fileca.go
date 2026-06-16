@@ -28,10 +28,13 @@ type fileCA struct {
 	baseca.BaseCA
 }
 
+// RHTAS FIPS - DO NOT REMOVE
+// ========================================
 // NewFileCA returns a file backed certificate authority. Expects paths to a
 // certificate and key that are PEM encoded. If keyPass is non-empty the key
 // is decrypted with the given password; otherwise the key is parsed as an
 // unencrypted PEM.
+// ========================================
 func NewFileCA(certPath, keyPath, keyPass string, watch bool) (ca.CertificateAuthority, error) {
 	var fca fileCA
 

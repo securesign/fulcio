@@ -100,9 +100,12 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("ct-log-public-key-path", "", "Path to a PEM-encoded public key of the CT log, used to verify SCTs")
 	cmd.Flags().String("config-path", defaultConfigPath, "path to fulcio config yaml")
 	cmd.Flags().String("pkcs11-config-path", "config/crypto11.conf", "path to fulcio pkcs11 config file")
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
 	cmd.Flags().String("fileca-cert", "", "Path to CA certificate")
 	cmd.Flags().String("fileca-key", "", "Path to CA private key")
 	cmd.Flags().String("fileca-key-passwd", "", "Password to decrypt CA private key (optional; omit for unencrypted keys)")
+	// ========================================
 	cmd.Flags().Bool("fileca-watch", true, "Watch filesystem for updates")
 	cmd.Flags().String("kms-resource", "", "KMS key resource path. Must be prefixed with awskms://, azurekms://, gcpkms://, or hashivault://")
 	cmd.Flags().String("kms-cert-chain-path", "", "Path to PEM-encoded CA certificate chain for KMS-backed CA")
@@ -193,6 +196,8 @@ func runServeCmd(cmd *cobra.Command, args []string) { //nolint: revive
 			// There's a MarkDeprecated function in cobra/pflags, but it doesn't use log.Logger
 			log.Logger.Warn("gcp_private_ca_version is deprecated and will soon be removed; please remove it")
 		}
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
 	case "fileca":
 		if !viper.IsSet("fileca-cert") {
 			log.Logger.Fatal("fileca-cert must be set to certificate path when using fileca")
@@ -200,6 +205,7 @@ func runServeCmd(cmd *cobra.Command, args []string) { //nolint: revive
 		if !viper.IsSet("fileca-key") {
 			log.Logger.Fatal("fileca-key must be set to private key path when using fileca")
 		}
+	// ========================================
 	case "kmsca":
 		if !viper.IsSet("kms-resource") {
 			log.Logger.Fatal("kms-resource must be set when using kmsca")
