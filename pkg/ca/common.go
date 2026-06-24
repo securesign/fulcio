@@ -111,9 +111,19 @@ func VerifyCertChain(certs []*x509.Certificate, signer crypto.Signer) error {
 		}
 	}
 
-	if err := cryptoutils.EqualKeys(certs[0].PublicKey, signer.Public()); err != nil {
-		return err
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
+	// cryptoutils.EqualKeys calls SKID (SHA-1) in its error-message path,
+	// which panics under fips140=only. SHA-1 is used here only as a
+	// diagnostic key fingerprint, not for security.
+	var equalKeysErr error
+	fips140.WithoutEnforcement(func() {
+		equalKeysErr = cryptoutils.EqualKeys(certs[0].PublicKey, signer.Public())
+	})
+	if equalKeysErr != nil {
+		return equalKeysErr
 	}
+	// ========================================
 
 	return goodkey.ValidatePubKey(signer.Public())
 }
