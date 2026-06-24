@@ -16,6 +16,7 @@
 package certmaker
 
 import (
+	"crypto/fips140"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -93,10 +94,19 @@ func ValidateCertificateKeyMatch(cert *x509.Certificate, sv signature.SignerVeri
 	// get public key from cert
 	certPubKey := cert.PublicKey
 
-	// compare public keys using sigstore cryptoutils
-	if err := cryptoutils.EqualKeys(certPubKey, kmsPubKey); err != nil {
-		return fmt.Errorf("%w: %v", ErrKeyMismatch, err)
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
+	// cryptoutils.EqualKeys calls SKID (SHA-1) in its error-message path,
+	// which panics under fips140=only. SHA-1 is used here only as a
+	// diagnostic key fingerprint, not for security.
+	var equalKeysErr error
+	fips140.WithoutEnforcement(func() {
+		equalKeysErr = cryptoutils.EqualKeys(certPubKey, kmsPubKey)
+	})
+	if equalKeysErr != nil {
+		return fmt.Errorf("%w: %v", ErrKeyMismatch, equalKeysErr)
 	}
+	// ========================================
 
 	return nil
 }
