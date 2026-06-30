@@ -118,8 +118,9 @@ ko-apply:
 	LDFLAGS="$(LDFLAGS)" GIT_HASH=$(GIT_HASH) GIT_VERSION=$(GIT_VERSION) ko apply -Bf config/
 
 .PHONY: ko-apply-ci
-ko-apply-ci: ko-apply
-	LDFLAGS="$(LDFLAGS)" GIT_HASH=$(GIT_HASH) GIT_VERSION=$(GIT_VERSION) ko apply -Bf config/test
+ko-apply-ci:
+	LDFLAGS="$(LDFLAGS)" GIT_HASH=$(GIT_HASH) GIT_VERSION=$(GIT_VERSION) ko apply --insecure-registry -Bf config/
+	LDFLAGS="$(LDFLAGS)" GIT_HASH=$(GIT_HASH) GIT_VERSION=$(GIT_VERSION) ko apply --insecure-registry -Bf config/test
 
 .PHONY: ko-publish
 ko-publish:
