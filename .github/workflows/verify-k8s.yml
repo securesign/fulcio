@@ -83,6 +83,12 @@ jobs:
 
       - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
+      - name: Configure Docker for insecure registry
+        run: |
+          echo '{"insecure-registries":["registry.local:5000"]}' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker info
+
       - name: Setup Cluster
         uses: chainguard-dev/actions/setup-kind@5f020827ba80ff5d64d45116542d0c733e8e7e71 # v1.6.23
         with:
