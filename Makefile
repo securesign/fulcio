@@ -124,7 +124,7 @@ ko-apply-ci:
 
 .PHONY: ko-publish
 ko-publish:
-	LDFLAGS="$(LDFLAGS)" GIT_HASH=$(GIT_HASH) GIT_VERSION=$(GIT_VERSION) ko publish .
+	LDFLAGS="$(LDFLAGS)" GIT_HASH=$(GIT_HASH) GIT_VERSION=$(GIT_VERSION) ko publish --insecure-registry .
 
 .PHONY: sign-keyless-ci
 sign-keyless-ci: ko
