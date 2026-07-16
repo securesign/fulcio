@@ -38,10 +38,6 @@ jobs:
 
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
-      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
-        run: |
-          go mod edit -dropgodebug=fips140
-
       - name: Start Fulcio services
         run: |
           docker compose up --build --wait -d

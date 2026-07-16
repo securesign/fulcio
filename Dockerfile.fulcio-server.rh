@@ -25,7 +25,9 @@ ADD go.mod go.sum $APP_ROOT/src/
 # Add source code
 ADD ./ $APP_ROOT/src/
 
-RUN go mod download && \
+USER root
+RUN go mod edit -godebug=fips140=auto && \
+    go mod download && \
     go build -mod=readonly -tags=no_openssl -o server main.go
 
 # Multi-Stage production build
