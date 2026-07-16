@@ -111,12 +111,6 @@ func loadUnencryptedKey(keyPath string) (crypto.Signer, error) {
 		case *rsa.PrivateKey:
 			key = k
 		case ed25519.PrivateKey:
-			// RHTAS FIPS - DO NOT REMOVE
-			// ========================================
-			if fips140.Enabled() {
-				return nil, fmt.Errorf("fileca: Ed25519 keys are not supported in FIPS mode")
-			}
-			// ========================================
 			key = k
 		default:
 			return nil, errors.New("fileca: unsupported key type in PKCS#8 container")

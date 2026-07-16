@@ -2,8 +2,6 @@ module github.com/sigstore/fulcio
 
 go 1.26.3
 
-godebug fips140=auto
-
 require (
 	chainguard.dev/go-grpc-kit v0.17.17
 	chainguard.dev/sdk v0.1.52

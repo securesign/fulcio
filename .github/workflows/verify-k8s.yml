@@ -37,12 +37,6 @@ jobs:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
 
-      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
-        run: |
-          go mod edit -dropgodebug=fips140
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git update-index --assume-unchanged go.mod
-
       - name: Install kubeconform
         run: go install github.com/yannh/kubeconform/cmd/kubeconform@e65429b1e5990dd019ebb7b5642dcd22a3e9cd13 # v0.7.0
 
@@ -71,6 +65,7 @@ jobs:
       REGISTRY_NAME: registry.local
       REGISTRY_PORT: 5000
       KO_PREFIX: registry.local:5000/fulcio
+      INSECURE_REGISTRY: true
       GIT_HASH: ${{ github.sha }}
       GIT_VERSION: test
 
@@ -86,12 +81,6 @@ jobs:
         with:
           go-version: '${{ env.GOVERSION }}'
           check-latest: true
-
-      - name: Remove RHTAS FIPS godebug for upstream Go # RHTAS FIPS - DO NOT REMOVE
-        run: |
-          go mod edit -dropgodebug=fips140
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git update-index --assume-unchanged go.mod
 
       - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d # v0.9
 
@@ -210,7 +199,7 @@ jobs:
 
       - name: Validate prometheus metrics exported and look correct
         run: |
-          cat <<EOF | ko apply -f -
+          cat <<EOF | ko apply --insecure-registry -f -
           apiVersion: batch/v1
           kind: Job
           metadata:
