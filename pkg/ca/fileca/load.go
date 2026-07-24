@@ -55,7 +55,11 @@ func loadKeyPair(certPath, keyPath, keyPass string) (*ca.SignerCertsMutex, error
 		if fips140.Enabled() {
 			return nil, fmt.Errorf("fileca: encrypted private keys are not supported in FIPS mode, use an unencrypted key")
 		}
-		opaqueKey, err := pemutil.Read(keyPath, pemutil.WithPassword([]byte(keyPass)))
+		pemBytes, err := os.ReadFile(filepath.Clean(keyPath))
+		if err != nil {
+			return nil, err
+		}
+		opaqueKey, err := cryptoutils.UnmarshalPEMToPrivateKey(pemBytes, cryptoutils.StaticPasswordFunc([]byte(keyPass)))
 		if err != nil {
 			return nil, err
 		}
