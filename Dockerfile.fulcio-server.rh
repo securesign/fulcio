@@ -1,0 +1,51 @@
+#
+# Copyright 2021 The Sigstore Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM registry.redhat.io/ubi9/go-toolset:9.8-1783679445@sha256:ffc84dd3e27836987c95f9a33485c3aac784571a7ee9d13db51a690e5c27e30e AS builder
+
+ENV CGO_ENABLED=1
+ENV APP_ROOT=/opt/app-root
+ENV GOPATH=$APP_ROOT
+ENV GOFIPS140=v1.0.0
+
+WORKDIR $APP_ROOT/src/
+ADD go.mod go.sum $APP_ROOT/src/
+# Add source code
+ADD ./ $APP_ROOT/src/
+
+USER root
+RUN go mod edit -godebug=fips140=auto && \
+    go mod download && \
+    go build -mod=readonly -tags=no_openssl -o server main.go
+
+# Multi-Stage production build
+FROM registry.access.redhat.com/ubi9-minimal@sha256:463cae32c6f6f5594b11a5c22de275016bd8545ce58a6373388e8b24f13fc15c as deploy
+
+LABEL description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
+LABEL io.k8s.description="Fulcio is a free-to-use certificate authority for issuing code signing certificates for an OpenID Connect (OIDC) identity, such as email address."
+LABEL io.k8s.display-name="Fulcio container image for Red Hat Trusted Signer"
+LABEL io.openshift.tags="fulcio trusted-signer"
+LABEL summary="Provides the Fulcio CA for keyless signing with Red Hat Trusted Signer."
+LABEL com.redhat.component="fulcio"
+LABEL name="rhtas/fulcio-rhel9"
+
+# Retrieve the binary from the previous stage
+COPY --from=builder /opt/app-root/src/server /usr/local/bin/fulcio-server
+COPY LICENSE /licenses/LICENSE
+
+USER 65532:65532
+
+# Set the binary as the entrypoint of the container
+ENTRYPOINT ["/usr/local/bin/fulcio-server", "serve"]

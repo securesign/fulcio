@@ -16,6 +16,7 @@ package identity
 
 import (
 	"context"
+	"crypto/fips140"
 	"fmt"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -35,5 +36,17 @@ func actualAuthorize(ctx context.Context, token string, opts ...config.InsecureO
 	if !ok {
 		return nil, fmt.Errorf("unsupported issuer: %s", issuer)
 	}
-	return verifier.Verify(ctx, token)
+	var idToken *oidc.IDToken
+	var verifyErr error
+	// RHTAS FIPS - DO NOT REMOVE
+	// ========================================
+	// go-jose unconditionally computes SHA-1 x5t thumbprints during JWKS parsing,
+	// which panics in FIPS 140-only mode. SHA-1 is used here only as a non-cryptographic
+	// key identifier, not for security. Remove once go-jose merges FIPS support:
+	// https://github.com/go-jose/go-jose/pull/219
+	fips140.WithoutEnforcement(func() {
+		idToken, verifyErr = verifier.Verify(ctx, token)
+	})
+	// ========================================
+	return idToken, verifyErr
 }

@@ -1,0 +1,65 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  annotations:
+    build.appstudio.openshift.io/repo: https://github.com/securesign/fulcio?rev={{revision}}
+    build.appstudio.redhat.com/commit_sha: '{{revision}}'
+    build.appstudio.redhat.com/target_branch: '{{target_branch}}'
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main"
+    # pipelinesascode.tekton.dev/task: "[.tekton/fulcio-unit-test.yaml]"
+    build.appstudio.openshift.io/build-nudge-files: ".*.env, .*.yml, .*README.md"
+  creationTimestamp: null
+  labels:
+    appstudio.openshift.io/application: tas-components
+    appstudio.openshift.io/component: fulcio-server
+    pipelines.appstudio.openshift.io/type: build
+  name: fulcio-server-on-push
+  namespace: rhtas-tenant
+spec:
+  params:
+  - name: release-version
+    value: "1.5.0"
+  - name: dockerfile
+    value: Dockerfile.fulcio-server.rh
+  - name: git-url
+    value: '{{repo_url}}'
+  - name: output-image
+    value: quay.io/securesign/fulcio-server:{{revision}}
+  - name: path-context
+    value: .
+  - name: revision
+    value: '{{revision}}'
+  - name: build-source-image
+    value: "true"
+  - name: hermetic
+    value: "true"
+  - name: prefetch-input
+    value: [{"path": ".", "type": "gomod"}, {"path": "./hack/tools", "type": "gomod"}]
+  - name: go_unit_test
+    value: true
+  - name: fips-check
+    value: "true"
+  taskRunSpecs:
+  - pipelineTaskName: run-unit-test
+    stepSpecs:
+    - computeResources:
+        limits:
+          memory: 4Gi
+      name: run-tests
+  pipelineRef:
+    resolver: git
+    params:
+      - name: url
+        value: 'https://github.com/securesign/pipelines.git'
+      - name: revision
+        value: 'main'
+      - name: pathInRepo
+        value: 'pipelines/docker-build-oci-ta.yaml'
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-fulcio-server
+  workspaces:
+  - name: git-auth
+    secret:
+      secretName: '{{ git_auth_secret }}'
+status: {}
