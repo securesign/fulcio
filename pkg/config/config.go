@@ -55,11 +55,20 @@ type verifierWithConfig struct {
 type bearerTokenTransport struct {
 	Transport http.RoundTripper
 	Token     string
+	IssuerURL string
 }
 
 func (t *bearerTokenTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req = req.Clone(req.Context())
-	req.Header.Set("Authorization", "Bearer "+t.Token)
+	parsedIssuer, err := url.Parse(t.IssuerURL)
+	if err != nil {
+		return nil, err
+	}
+	if req.URL.Host == parsedIssuer.Host {
+		req.Header.Set("Authorization", "Bearer "+t.Token)
+	} else {
+		return nil, fmt.Errorf("issuer URL host %s does not match request URL host %s", parsedIssuer.Host, req.URL.Host)
+	}
 	return t.Transport.RoundTrip(req)
 }
 
@@ -187,6 +196,7 @@ func (fc *FulcioConfig) GetIssuer(issuerURL string) (OIDCIssuer, bool) {
 				SubjectDomain:         iss.SubjectDomain,
 				CIProvider:            iss.CIProvider,
 				SkipEmailVerification: iss.SkipEmailVerification,
+				CACert:                iss.CACert,
 			}, true
 		}
 	}
@@ -306,13 +316,25 @@ func (fc *FulcioConfig) ToIssuers() []*fulciogrpc.OIDCIssuer {
 	return issuers
 }
 
+func noRedirectClient(client *http.Client) *http.Client {
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) > 0 && req.URL.Host != via[0].URL.Host {
+			return fmt.Errorf("oidc: redirect to different host %q blocked", req.URL.Host)
+		}
+		return nil
+	}
+	return client
+}
+
 func httpClientForIssuer(fc *FulcioConfig, iss OIDCIssuer) (*http.Client, error) {
 	transportProvider := func(transport *http.Transport) http.RoundTripper {
 		return transport
 	}
 
 	_, hasK8SIssuer := fc.GetIssuer(k8sIssuerURL)
-	if iss.Type == IssuerTypeKubernetes && hasK8SIssuer {
+	_, isConfiguredOIDCIssuer := fc.OIDCIssuers[iss.IssuerURL]
+	isTrustedK8sIssuer := isConfiguredOIDCIssuer || iss.IssuerURL == k8sIssuerURL
+	if iss.Type == IssuerTypeKubernetes && hasK8SIssuer && isTrustedK8sIssuer {
 		// Add the Kubernetes cluster's CA to the client's CA pool
 		certs, err := os.ReadFile(k8sCA)
 		if err != nil {
@@ -330,6 +352,7 @@ func httpClientForIssuer(fc *FulcioConfig, iss OIDCIssuer) (*http.Client, error)
 				return &bearerTokenTransport{
 					Transport: transport,
 					Token:     string(tokenBytes),
+					IssuerURL: iss.IssuerURL,
 				}
 			}
 		} else {
@@ -356,9 +379,9 @@ func httpClientForIssuer(fc *FulcioConfig, iss OIDCIssuer) (*http.Client, error)
 				MinVersion: tls.VersionTLS12,
 			},
 		}
-		return &http.Client{Transport: transportProvider(transport)}, nil
+		return noRedirectClient(&http.Client{Transport: transportProvider(transport)}), nil
 	}
-	return http.DefaultClient, nil
+	return noRedirectClient(&http.Client{Transport: http.DefaultTransport}), nil
 }
 
 func (fc *FulcioConfig) prepare() error {

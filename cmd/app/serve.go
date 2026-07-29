@@ -28,6 +28,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"syscall"
@@ -97,6 +98,7 @@ func newServeCmd() *cobra.Command {
 		"Optionally specify /certificateAuthorities/<caID>, which will bypass CA pool load balancing.")
 	cmd.Flags().String("hsm-caroot-id", "", "HSM ID for Root CA (only used with --ca pkcs11ca)")
 	cmd.Flags().String("ct-log-url", "http://localhost:6962/test", "host and path (with log prefix at the end) to the ct log")
+	cmd.Flags().String("ct-log-origin", "", "ct log origin name, if different from the URL")
 	cmd.Flags().String("ct-log-public-key-path", "", "Path to a PEM-encoded public key of the CT log, used to verify SCTs")
 	cmd.Flags().String("config-path", defaultConfigPath, "path to fulcio config yaml")
 	cmd.Flags().String("pkcs11-config-path", "config/crypto11.conf", "path to fulcio pkcs11 config file")
@@ -125,6 +127,7 @@ func newServeCmd() *cobra.Command {
 	cmd.Flags().String("grpc-tls-key", "", "the private key file to use for secure connections (without passphrase) - only applies to grpc-port")
 	cmd.Flags().Duration("idle-connection-timeout", 30*time.Second, "The time allowed for connections (HTTP or gRPC) to go idle before being closed by the server")
 	cmd.Flags().String("ct-log.tls-ca-cert", "", "Path to TLS CA certificate used to connect to ct-log")
+	cmd.Flags().String("hsm-key-label", "PKCS11CA", "HSM key label for PKCS11 CA")
 	cmd.Flags().StringSlice("client-signing-algorithms", buildDefaultClientSigningAlgorithms([]v1.PublicKeyDetails{
 		v1.PublicKeyDetails_PKIX_ECDSA_P256_SHA_256,
 		v1.PublicKeyDetails_PKIX_ECDSA_P384_SHA_384,
@@ -160,8 +163,30 @@ type logAdaptor struct {
 	logger *zap.SugaredLogger
 }
 
-func (la logAdaptor) Printf(s string, args ...interface{}) {
+func (la logAdaptor) Printf(s string, args ...any) {
 	la.logger.Infof(s, args...)
+}
+
+type hostRoundTripper struct {
+	http.RoundTripper
+	host string
+}
+
+func (rt *hostRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if req == nil {
+		return nil, errors.New("http: nil Request")
+	}
+	ctx := req.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	req = req.Clone(ctx)
+	req.Host = rt.host
+	inner := rt.RoundTripper
+	if inner == nil {
+		inner = http.DefaultTransport
+	}
+	return inner.RoundTrip(req)
 }
 
 func runServeCmd(cmd *cobra.Command, args []string) { //nolint: revive
@@ -270,6 +295,7 @@ func runServeCmd(cmd *cobra.Command, args []string) { //nolint: revive
 		params := pkcs11ca.Params{
 			ConfigPath: viper.GetString("pkcs11-config-path"),
 			RootID:     viper.GetString("hsm-caroot-id"),
+			KeyLabel:   viper.GetString("hsm-key-label"),
 		}
 		if viper.IsSet("aws-hsm-root-ca-path") {
 			path := viper.GetString("aws-hsm-root-ca-path")
@@ -347,6 +373,16 @@ func runServeCmd(cmd *cobra.Command, args []string) { //nolint: revive
 		} else {
 			httpClient = &http.Client{
 				Timeout: 30 * time.Second,
+			}
+		}
+		if origin := viper.GetString("ct-log-origin"); origin != "" {
+			inner := httpClient.Transport
+			if inner == nil {
+				inner = http.DefaultTransport
+			}
+			httpClient.Transport = &hostRoundTripper{
+				RoundTripper: inner,
+				host:         origin,
 			}
 		}
 		ctClient, err = ctclient.New(logURL, httpClient, opts)
@@ -434,11 +470,8 @@ func checkServeCmdConfigFile() error {
 		extWithDot := filepath.Ext(abspath)
 		ext := strings.TrimPrefix(extWithDot, ".")
 		var extIsValid bool
-		for _, validExt := range viper.SupportedExts {
-			if ext == validExt {
-				extIsValid = true
-				break
-			}
+		if slices.Contains(viper.SupportedExts, ext) {
+			extIsValid = true
 		}
 		if !extIsValid {
 			return fmt.Errorf("config file must have one of the following extensions: %s", strings.Join(viper.SupportedExts, ", "))

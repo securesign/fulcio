@@ -84,7 +84,7 @@ services:
         "--origin", "tesseract",
         "--storage_dir", "/ctfe",
         "--roots_pem_file", "/etc/fulcio/root.pem",
-        "--v", "1",
+        "--slog_level", "-4",
         "--ext_key_usages", "CodeSigning",
         "--http_endpoint", "0.0.0.0:6962",
     ]
@@ -98,7 +98,7 @@ services:
     ports:
       - "6962:6962"
   ct-read:
-    image: nginx:1.29.4@sha256:ca871a86d45a3ec6864dc45f014b11fe626145569ef0e74deaffc95a3b15b430
+    image: nginx:1.31.2@sha256:ec4ed8b5299e5e90694af7750eb6dffd2627317d30544d056b0371f8082f7bce
     volumes:
       - ctStorage:/usr/share/nginx/html
     user: root

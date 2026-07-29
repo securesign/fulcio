@@ -17,7 +17,9 @@ package server
 
 import (
 	"context"
+	"errors"
 
+	ctclient "github.com/google/certificate-transparency-go/client"
 	"github.com/sigstore/fulcio/pkg/log"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -41,7 +43,12 @@ const (
 	loadingFulcioConfigurationError         = "error loading fulcio configuration"
 )
 
-func handleFulcioGRPCError(ctx context.Context, code codes.Code, err error, message string, fields ...interface{}) error {
+func handleFulcioGRPCError(ctx context.Context, code codes.Code, err error, message string, fields ...any) error {
+	var rspErr ctclient.RspError
+	if errors.As(err, &rspErr) {
+		fields = append(fields, "body", string(rspErr.Body))
+	}
+
 	// Use log level "warning" for codes that are likely client errors, see https://grpc.github.io/grpc/core/md_doc_statuscodes.html
 	switch code {
 	case codes.InvalidArgument,
@@ -54,9 +61,9 @@ func handleFulcioGRPCError(ctx context.Context, code codes.Code, err error, mess
 		codes.Aborted,
 		codes.ResourceExhausted,
 		codes.Canceled:
-		log.ContextLogger(ctx).Warnw(err.Error(), append([]interface{}{"code", code, "clientMessage", message, "error", err}, fields...)...)
+		log.ContextLogger(ctx).Warnw(err.Error(), append([]any{"code", code, "clientMessage", message, "error", err}, fields...)...)
 	default:
-		log.ContextLogger(ctx).Errorw(err.Error(), append([]interface{}{"code", code, "clientMessage", message, "error", err}, fields...)...)
+		log.ContextLogger(ctx).Errorw(err.Error(), append([]any{"code", code, "clientMessage", message, "error", err}, fields...)...)
 	}
 	return status.Error(code, message)
 }

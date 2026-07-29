@@ -26,7 +26,7 @@ import (
 	"github.com/sigstore/fulcio/pkg/ca/baseca"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
 	tinkUtils "github.com/sigstore/sigstore/pkg/signature/tink"
-	"github.com/tink-crypto/tink-go-awskms/v2/integration/awskms"
+	"github.com/tink-crypto/tink-go-awskms/v3/integration/awskms"
 	"github.com/tink-crypto/tink-go-gcpkms/v2/integration/gcpkms"
 	"github.com/tink-crypto/tink-go/v2/core/registry"
 	"github.com/tink-crypto/tink-go/v2/keyset"
@@ -91,14 +91,14 @@ func NewTinkCAFromHandle(_ context.Context, tinkKeysetPath, certPath string, pri
 func GetPrimaryKey(ctx context.Context, kmsKey string) (tink.AEAD, error) {
 	switch {
 	case strings.HasPrefix(kmsKey, "gcp-kms://"):
-		gcpClient, err := gcpkms.NewClientWithOptions(ctx, kmsKey)
+		gcpClient, err := gcpkms.NewClient(ctx, kmsKey, gcpkms.WithTransport(gcpkms.TransportREST))
 		if err != nil {
 			return nil, err
 		}
 		registry.RegisterKMSClient(gcpClient)
 		return gcpClient.GetAEAD(kmsKey)
 	case strings.HasPrefix(kmsKey, "aws-kms://"):
-		awsClient, err := awskms.NewClientWithOptions(kmsKey)
+		awsClient, err := awskms.NewClientWithOptions(ctx, kmsKey)
 		if err != nil {
 			return nil, err
 		}

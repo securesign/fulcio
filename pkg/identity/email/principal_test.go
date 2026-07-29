@@ -32,13 +32,13 @@ import (
 
 func TestPrincipalFromIDToken(t *testing.T) {
 	tests := map[string]struct {
-		Claims            map[string]interface{}
+		Claims            map[string]any
 		Config            config.FulcioConfig
 		ExpectedPrincipal principal
 		WantErr           bool
 	}{
 		`Well formed token has no errors`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://iss.example.com",
 				"sub":            "doesntmatter",
@@ -57,11 +57,12 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			ExpectedPrincipal: principal{
 				issuer:  "https://iss.example.com",
 				address: "alice@example.com",
+				subject: "doesntmatter",
 			},
 			WantErr: false,
 		},
 		`Custom issuer claim`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://dex.other.com",
 				"sub":            "doesntmatter",
@@ -84,11 +85,12 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			ExpectedPrincipal: principal{
 				issuer:  "https://example.com",
 				address: "alice@example.com",
+				subject: "doesntmatter",
 			},
 			WantErr: false,
 		},
 		`String email verified value`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://dex.other.com",
 				"sub":            "doesntmatter",
@@ -111,11 +113,12 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			ExpectedPrincipal: principal{
 				issuer:  "https://example.com",
 				address: "alice@example.com",
+				subject: "doesntmatter",
 			},
 			WantErr: false,
 		},
 		`Custom issuer claim missing`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://dex.other.com",
 				"sub":            "doesntmatter",
@@ -135,7 +138,7 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			WantErr: true,
 		},
 		`Email not verified should error`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://iss.example.com",
 				"sub":            "doesntmatter",
@@ -154,7 +157,7 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			WantErr: true,
 		},
 		`Email not verified but skip-email-verification enabled should succeed`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":   "sigstore",
 				"iss":   "https://internal.example.com",
 				"sub":   "doesntmatter",
@@ -173,11 +176,12 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			ExpectedPrincipal: principal{
 				issuer:  "https://internal.example.com",
 				address: "alice@example.com",
+				subject: "doesntmatter",
 			},
 			WantErr: false,
 		},
 		`Email not verified (false) but skip-email-verification enabled should succeed`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://internal.example.com",
 				"sub":            "doesntmatter",
@@ -197,11 +201,12 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			ExpectedPrincipal: principal{
 				issuer:  "https://internal.example.com",
 				address: "alice@example.com",
+				subject: "doesntmatter",
 			},
 			WantErr: false,
 		},
 		`Email verified with skip-email-verification enabled should succeed`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://internal.example.com",
 				"sub":            "doesntmatter",
@@ -221,11 +226,12 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			ExpectedPrincipal: principal{
 				issuer:  "https://internal.example.com",
 				address: "alice@example.com",
+				subject: "doesntmatter",
 			},
 			WantErr: false,
 		},
 		`Missing email claim should error`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://iss.example.com",
 				"sub":            "doesntmatter",
@@ -243,7 +249,7 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			WantErr: true,
 		},
 		`Invalid email address should error`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://iss.example.com",
 				"sub":            "doesntmatter",
@@ -262,7 +268,7 @@ func TestPrincipalFromIDToken(t *testing.T) {
 			WantErr: true,
 		},
 		`No issuer configured for token`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://nope.example.com",
 				"sub":            "doesntmatter",
@@ -330,12 +336,12 @@ func withClaims(token *oidc.IDToken, data []byte) {
 
 func TestName(t *testing.T) {
 	tests := map[string]struct {
-		Claims       map[string]interface{}
+		Claims       map[string]any
 		Config       config.FulcioConfig
 		ExpectedName string
 	}{
 		`name should match email address`: {
-			Claims: map[string]interface{}{
+			Claims: map[string]any{
 				"aud":            "sigstore",
 				"iss":            "https://iss.example.com",
 				"sub":            "doesntmatter",
