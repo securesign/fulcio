@@ -35,15 +35,16 @@ spec:
   - name: hermetic
     value: "true"
   - name: prefetch-input
-    value: [{"path": ".", "type": "gomod"}, {"path": "./hack/tools", "type": "gomod"}]
+    value: '{"type": "gomod", "path": "."}'
   - name: go_unit_test
-    value: true
+    value: "true"
   taskRunSpecs:
-    - pipelineTaskName: run-unit-test
-      serviceAccountName: build-pipeline-fulcio-server-v1-3
-      podTemplate:
-        imagePullSecrets:
-        - name: brew-registry-pull-secret
+  - pipelineTaskName: run-unit-test
+    stepSpecs:
+    - computeResources:
+        limits:
+          memory: 4Gi
+      name: run-tests
   pipelineRef:
     resolver: git
     params:
