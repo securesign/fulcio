@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>securesign/renovate-config//org-inherited-config.json"
+  ],
+  "enabledManagers": ["dockerfile", "gomod", "tekton", "custom.regex"],
+  "ignorePaths": [
+    "Dockerfile",
+    "Dockerfile.dex-idp",
+    "Dockerfile.tesseract",
+    "docker-compose.yml",
+    "docker-compose.debug.yml",
+    "hack/tools/**",
+    "release/**",
+    "config/**",
+    ".github/workflows/**"
+  ],
+  "packageRules": [
+    {
+      "description": "Disable GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "enabled": false
+    },
+    {
+      "description": "Disable docker-compose updates",
+      "matchManagers": ["docker-compose"],
+      "enabled": false
+    },
+    {
+      "description": "Disable updates for upstream-only Docker images",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": [
+        "dexidp/dex",
+        "ghcr.io/transparency-dev/tesseract/posix",
+        "nginx"
+      ],
+      "enabled": false
+    }
+  ]
+}
