@@ -18,8 +18,16 @@ name: CI-Container-Build
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main, 'release-*' ]
+    paths-ignore:
+      - 'Dockerfile.fulcio-server.rh'
+      - 'docker-compose*.yml'
+      - '.tekton/**'
+      - 'docs/**'
+      - 'examples/**'
+      - 'CODEOWNERS'
+      - '*.md'
+      - 'LICENSE'
 
 jobs:
   build:
@@ -40,7 +48,7 @@ jobs:
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Extract version of Go to use
-        run: echo "GOVERSION=$(awk -F'[:@]' '/FROM golang/{print $2; exit}' Dockerfile)" >> $GITHUB_ENV
+        run: echo "GOVERSION=$(awk '/^go /{print $2}' go.mod)" >> $GITHUB_ENV
 
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
