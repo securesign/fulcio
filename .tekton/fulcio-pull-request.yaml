@@ -19,7 +19,9 @@ metadata:
 spec:
   params:
   - name: config-task-revision
-    value: 'jkopriva/SECURESIGN-4640'
+    value: 'b28b99a8e26d03c85b7168e0699a551d2118722f'
+  - name: target-branch
+    value: '{{target_branch}}'
   - name: dockerfile
     value: Dockerfile.fulcio-server.rh
   - name: git-url
