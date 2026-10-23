@@ -18,8 +18,6 @@ metadata:
   namespace: rhtas-tenant
 spec:
   params:
-  - name: config-task-revision
-    value: 'jkopriva/SECURESIGN-4640'
   - name: dockerfile
     value: Dockerfile.fulcio-server.rh
   - name: git-url
