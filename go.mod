@@ -1,6 +1,6 @@
 module github.com/sigstore/fulcio
 
-go 1.26.3
+go 1.26.10
 
 require (
 	chainguard.dev/go-grpc-kit v0.18.0
@@ -158,3 +158,5 @@ require (
 )
 
 replace go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc => go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.45.0
+
+replace github.com/ThalesGroup/crypto11 => github.com/eclipse-keypont/crypto11 v1.6.8
