@@ -7,7 +7,11 @@ metadata:
     build.appstudio.redhat.com/pull_request_number: '{{pull_request_number}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "release-1.4"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
+      == "release-1.4" && ( ".tekton/fulcio-pull-request.yaml".pathChanged() || "Dockerfile.fulcio-server.rh".pathChanged()
+      || "trigger-konflux-builds.txt".pathChanged() || "go.mod".pathChanged() || "go.sum".pathChanged()
+      || "main.go".pathChanged() || "cmd/***".pathChanged() || "pkg/***".pathChanged()
+      )
     # pipelinesascode.tekton.dev/task: "[.tekton/fulcio-unit-test.yaml]"
   creationTimestamp: null
   labels:
