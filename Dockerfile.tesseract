@@ -14,9 +14,9 @@
 
 # Rebuild the tesseract image using the golang case in order to get the curl binary for the docker-compose healthcheck.
 
-FROM ghcr.io/transparency-dev/tesseract/posix:v0.1.2@sha256:b044edd2388857dfc590381ff526214dfea93c6eeb61f632e58633cac2330935 AS server
+FROM ghcr.io/transparency-dev/tesseract/posix:v0.2.0@sha256:80059f05b7a02ce7d5d9730b66bc7e56035fc0e77f41fd76dd067af91bcdebce AS server
 
-FROM golang:1.27.2@sha256:5bc7f572bbaa98885a3a1fd9c0aa76b59e3e14e8628bfc316bbfd0c701e4818c AS deploy
+FROM golang:1.27.3@sha256:9048d5e7751706200eb1719c7dae0436950d362f29a1da91fa05e5c63867c60f AS deploy
 
 COPY --from=server /ko-app/posix /usr/local/bin/tesseract
 
