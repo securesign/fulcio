@@ -7,6 +7,15 @@ on:
     - cron: '30 1 * * 6'
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'Dockerfile.fulcio-server.rh'
+      - 'docker-compose*.yml'
+      - '.tekton/**'
+      - 'docs/**'
+      - 'examples/**'
+      - 'CODEOWNERS'
+      - '*.md'
+      - 'LICENSE'
 
 # Declare default permissions as read only.
 permissions: read-all
