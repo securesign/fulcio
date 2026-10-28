@@ -16,6 +16,7 @@ on:
       - 'CODEOWNERS'
       - '*.md'
       - 'LICENSE'
+      - 'renovate.json'
 
 # Declare default permissions as read only.
 permissions: read-all

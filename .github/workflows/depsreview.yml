@@ -24,6 +24,7 @@ on:
       - 'CODEOWNERS'
       - '*.md'
       - 'LICENSE'
+      - 'renovate.json'
 
 permissions:
   contents: read
