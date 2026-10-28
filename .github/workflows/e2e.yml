@@ -26,6 +26,7 @@ on:
       - 'CODEOWNERS'
       - '*.md'
       - 'LICENSE'
+      - 'renovate.json'
   pull_request:
     paths-ignore:
       - 'Dockerfile.fulcio-server.rh'
@@ -35,6 +36,7 @@ on:
       - 'CODEOWNERS'
       - '*.md'
       - 'LICENSE'
+      - 'renovate.json'
 
 permissions:
   contents: read
