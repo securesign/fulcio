@@ -27,6 +27,7 @@ on:
       - 'CODEOWNERS'
       - '*.md'
       - 'LICENSE'
+      - 'renovate.json'
   pull_request:
     paths-ignore:
       - 'Dockerfile.fulcio-server.rh'
@@ -37,6 +38,7 @@ on:
       - 'CODEOWNERS'
       - '*.md'
       - 'LICENSE'
+      - 'renovate.json'
   schedule:
     - cron: '45 10 * * 1'
 
