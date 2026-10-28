@@ -5,7 +5,7 @@
   ],
   "enabledManagers": ["dockerfile", "gomod", "tekton", "custom.regex"],
   "ignorePaths": [
-    "Dockerfile",
+    "Dockerfile{,}",
     "Dockerfile.dex-idp",
     "Dockerfile.tesseract",
     "docker-compose.yml",
