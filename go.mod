@@ -46,6 +46,8 @@ require (
 	sigs.k8s.io/release-utils v0.12.4
 )
 
+require github.com/klauspost/compress v1.20.2 // indirect
+
 require (
 	cloud.google.com/go v0.123.0 // indirect
 	cloud.google.com/go/auth v0.22.0 // indirect
