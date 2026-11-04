@@ -38,6 +38,7 @@ import (
 	"github.com/sigstore/fulcio/pkg/log"
 	"github.com/sigstore/fulcio/pkg/server"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
@@ -101,6 +102,7 @@ func createHTTPServer(ctx context.Context, serverEndpoint string, grpcServer, le
 	// enable CORS
 	// cors.Default() configures to accept requests for all domains
 	handler = cors.Default().Handler(handler)
+	handler = otelhttp.NewHandler(handler, "fulcio-http")
 
 	api := http.Server{
 		Addr:    serverEndpoint,
