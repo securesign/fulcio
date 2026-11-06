@@ -38,7 +38,7 @@ import (
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/fulcio/pkg/log"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
-	"github.com/sigstore/sigstore/pkg/cryptoutils/goodkey"
+	"github.com/sigstore/sigstore/pkg/cryptoutils/goodkey" //nolint:staticcheck
 	"github.com/sigstore/sigstore/pkg/signature"
 )
 
