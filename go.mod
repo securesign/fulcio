@@ -7,9 +7,9 @@ require (
 	chainguard.dev/sdk v0.1.227
 	cloud.google.com/go/security v1.29.1
 	github.com/PaesslerAG/jsonpath v0.1.1
-	github.com/ThalesGroup/crypto11 v1.6.7
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/coreos/go-oidc/v3 v3.21.0
+	github.com/eclipse-keypont/crypto11 v1.6.8
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-jose/go-jose/v4 v4.1.8
 	github.com/google/certificate-transparency-go v1.4.0

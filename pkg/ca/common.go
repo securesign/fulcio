@@ -24,7 +24,7 @@ import (
 
 	"github.com/sigstore/fulcio/pkg/identity"
 	"github.com/sigstore/sigstore/pkg/cryptoutils"
-	"github.com/sigstore/sigstore/pkg/cryptoutils/goodkey"
+	"github.com/sigstore/sigstore/pkg/cryptoutils/goodkey" //nolint:staticcheck
 )
 
 func MakeX509(ctx context.Context, principal identity.Principal, publicKey crypto.PublicKey) (*x509.Certificate, error) {
