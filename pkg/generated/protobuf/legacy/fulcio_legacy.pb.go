@@ -42,14 +42,17 @@ const (
 
 type CreateSigningCertificateRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	//
 	// The public key to be stored in the requested certificate
 	//
 	// Deprecated: Marked as deprecated in fulcio_legacy.proto.
 	PublicKey *PublicKey `protobuf:"bytes,1,opt,name=publicKey,proto3" json:"publicKey,omitempty"`
+	//
 	// Proof that the client possesses the private key
 	//
 	// Deprecated: Marked as deprecated in fulcio_legacy.proto.
 	SignedEmailAddress []byte `protobuf:"bytes,2,opt,name=signedEmailAddress,proto3" json:"signedEmailAddress,omitempty"`
+	//
 	// Optional: PKCS#10 PEM-encoded certificate signing request
 	// Contains the public key to be stored in the requested
 	// certificate. All other CSR fields are ignored. Since
@@ -121,10 +124,12 @@ func (x *CreateSigningCertificateRequest) GetCertificateSigningRequest() []byte 
 
 type PublicKey struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	//
 	// The cryptographic algorithm to use with the key material
 	//
 	// Deprecated: Marked as deprecated in fulcio_legacy.proto.
 	Algorithm string `protobuf:"bytes,1,opt,name=algorithm,proto3" json:"algorithm,omitempty"`
+	//
 	// PKIX, ASN.1 DER or PEM-encoded public key. PEM is typically
 	// of type PUBLIC KEY.
 	//
