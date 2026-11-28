@@ -3,46 +3,46 @@ module github.com/sigstore/fulcio
 go 1.26.0
 
 require (
-	chainguard.dev/go-grpc-kit v0.20.0
-	chainguard.dev/sdk v0.1.227
+	chainguard.dev/go-grpc-kit v0.21.0
+	chainguard.dev/sdk v0.2.28
 	cloud.google.com/go/security v1.29.1
 	github.com/PaesslerAG/jsonpath v0.1.1
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/coreos/go-oidc/v3 v3.21.0
 	github.com/eclipse-keypont/crypto11 v1.6.8
 	github.com/fsnotify/fsnotify v1.10.1
-	github.com/go-jose/go-jose/v4 v4.1.8
+	github.com/go-jose/go-jose/v4 v4.1.9
 	github.com/google/certificate-transparency-go v1.4.0
 	github.com/google/go-cmp v0.7.0
-	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
+	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.4
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.1-0.20230405093142-a5446fa24890
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.33.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.34.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/magiconair/properties v1.18.12
+	github.com/magiconair/properties v1.18.13
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3
-	github.com/prometheus/common v0.73.1
+	github.com/prometheus/common v0.74.0
 	github.com/rs/cors v1.11.1
 	github.com/sigstore/protobuf-specs v0.5.2
-	github.com/sigstore/sigstore v1.10.11
-	github.com/sigstore/sigstore/pkg/signature/kms/aws v1.10.11
-	github.com/sigstore/sigstore/pkg/signature/kms/azure v1.10.11
-	github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.10.11
-	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.10.11
+	github.com/sigstore/sigstore v1.11.4
+	github.com/sigstore/sigstore/pkg/signature/kms/aws v1.11.4
+	github.com/sigstore/sigstore/pkg/signature/kms/azure v1.11.4
+	github.com/sigstore/sigstore/pkg/signature/kms/gcp v1.11.4
+	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.11.4
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/spf13/viper v1.21.0
 	github.com/spiffe/go-spiffe/v2 v2.9.0
 	github.com/stretchr/testify v1.12.1
-	github.com/tink-crypto/tink-go-awskms/v2 v2.1.0
-	github.com/tink-crypto/tink-go-gcpkms/v2 v2.2.0
+	github.com/tink-crypto/tink-go-awskms/v3 v3.0.0
+	github.com/tink-crypto/tink-go-gcpkms/v2 v2.4.0
 	github.com/tink-crypto/tink-go/v2 v2.9.0
-	go.step.sm/crypto v0.91.1
+	go.step.sm/crypto v0.92.1
 	go.uber.org/zap v1.28.0
-	go.yaml.in/yaml/v3 v3.0.6
-	goa.design/goa/v3 v3.34.0
-	google.golang.org/api v0.310.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20261026165753-2ffab32bce7e
+	go.yaml.in/yaml/v4 v4.0.0
+	goa.design/goa/v3 v3.36.0
+	google.golang.org/api v0.317.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20261123191846-1e707ab9fbc2
 	google.golang.org/grpc v1.85.0
 	google.golang.org/protobuf v1.36.12
 	sigs.k8s.io/release-utils v0.12.5
